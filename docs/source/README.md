@@ -11,7 +11,7 @@
 Functional and typesafe library to use git commands in Scala
 
 ```sbt
-libraryDependencies += "com.github.geirolz" %% "git4s" % "<version>"
+libraryDependencies += "com.github.geirolz" %% "git4s" % "@VERSION@"
 ```
 
 ## Contributing
