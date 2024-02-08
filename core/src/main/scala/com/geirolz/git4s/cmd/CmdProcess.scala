@@ -2,7 +2,7 @@ package com.geirolz.git4s.cmd
 
 import cats.effect.kernel.Async
 import fs2.io.process.Process
-import fs2.{Stream, text}
+import fs2.{text, Stream}
 
 private[git4s] trait CmdProcess[F[_]]:
   def isAlive: F[Boolean]

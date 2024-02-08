@@ -11,7 +11,7 @@ object GitInitResult:
   case class InitializedEmptyRepository(path: Path) extends GitInitResult
   case class ReinitializedExistingRepository(path: Path) extends GitInitResult
 
-  given  CmdDecoder[GitInitResult] =
+  given CmdDecoder[GitInitResult] =
     CmdDecoder.text.map {
       case s"Initialized empty Git repository in $path" =>
         InitializedEmptyRepository(Path(path))
