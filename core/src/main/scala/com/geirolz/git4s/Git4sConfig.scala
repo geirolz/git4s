@@ -5,7 +5,6 @@ import cats.syntax.all.*
 import com.geirolz.git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
 import com.geirolz.git4s.data.request.GitConfigTarget
 import com.geirolz.git4s.log.CmdLogger
-import fs2.io.file.Path
 
 trait Git4sConfig[F[_]](target: GitConfigTarget)(using WorkingCtx):
   def get(key: String)(using CmdLogger[F]): F[Option[String]]

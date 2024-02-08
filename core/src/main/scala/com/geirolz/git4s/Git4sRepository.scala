@@ -4,29 +4,52 @@ import cats.effect.kernel.Async
 import com.geirolz.git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
 import com.geirolz.git4s.data.*
 import com.geirolz.git4s.data.request.FixupCommit
+import com.geirolz.git4s.data.value.{BranchName, Remote}
 import com.geirolz.git4s.log.CmdLogger
-import fs2.io.file.Path
+import cats.syntax.all.*
 
+// - tag
+// - rename branch
 trait Git4sRepository[F[_]]:
+
+  // ==================== BRANCH BASED ====================
+  /** Show the current branch.
+    *
+    * [[https://git-scm.com/docs/git-rev-parse]]
+    */
+  def currentBranch(using CmdLogger[F]): F[BranchName]
 
   /** Show the working tree status.
     *
     * [[https://git-scm.com/docs/git-status]]
     */
-  def status(
-    short: Boolean  = false,
-    long: Boolean   = false,
-    branch: Boolean = false
-  )(using CmdLogger[F]): F[GitStatus]
+  def status(using CmdLogger[F]): F[GitStatus]
 
-  /** Create an empty Git repository or reinitialize an existing one.
+  /** Update remote refs along with associated objects.
     *
-    * [[https://git-scm.com/docs/git-init]]
+    * [[https://git-scm.com/docs/git-push]]
     */
-  def init(
-    quiet: Boolean = false,
-    bare: Boolean  = false
-  )(using CmdLogger[F]): F[GitInitResult]
+  def push(
+    remote: Remote                         = Remote.origin,
+    sourceBranch: Option[BranchName]       = None,
+    remoteTargetBranch: Option[BranchName] = None,
+    force: Boolean                         = false
+  )(using CmdLogger[F]): F[Unit]
+
+  /** Fetch from and integrate with another repository or a local branch.
+    *
+    * [[https://git-scm.com/docs/git-pull]]
+    */
+  def pull(
+    remote: Remote                   = Remote.origin,
+    targetBranch: Option[BranchName] = None,
+    rebase: Boolean                  = false,
+    fastForwardOnly: Boolean         = false,
+    noFastForward: Boolean           = false,
+    squash: Boolean                  = false,
+    noCommit: Boolean                = false,
+    noVerify: Boolean                = false
+  )(using CmdLogger[F]): F[Unit]
 
   /** Add file contents to the index.
     *
@@ -34,20 +57,7 @@ trait Git4sRepository[F[_]]:
     *
     * [[https://git-scm.com/docs/git-add]]
     */
-  def add(
-    pattern: String,
-    dryRun: Boolean             = false,
-    verbose: Boolean            = false,
-    force: Boolean              = false,
-    sparse: Boolean             = false,
-    all: Boolean                = false,
-    noAll: Boolean              = false,
-    refresh: Boolean            = false,
-    ignoreErrors: Boolean       = false,
-    ignoreMissing: Boolean      = false,
-    noWarnEmbeddedRepo: Boolean = false,
-    renormalize: Boolean        = false
-  )(using CmdLogger[F]): F[GitAddResult]
+  def add(pattern: String = ".")(using CmdLogger[F]): F[GitAddResult]
 
   /** Record changes to the repository.
     *
@@ -55,92 +65,123 @@ trait Git4sRepository[F[_]]:
     */
   def commit(
     message: String,
-    all: Boolean                 = false,
-    reuseMessage: Option[String] = None,
-    fixup: Option[FixupCommit]   = None,
-    squash: Option[String]       = None,
-    short: Boolean               = false,
-    branch: Boolean              = false
+    fixup: Option[FixupCommit] = None
   )(using CmdLogger[F]): F[GitCommitResult]
+
+  // ==================== BRANCH AGNOSTIC ====================
+  /** Select the branch with the specified name */
+  def checkout(branchName: BranchName, createIfNotExists: Boolean = true): F[Unit]
+
+  /** Delete a branch.
+    *
+    * [[https://git-scm.com/docs/git-branch]]
+    */
+  override def deleteLocalBranch(branchName: BranchName): F[Unit]
+
+  /** Delete a branch on the remote.
+    *
+    * [[https://git-scm.com/docs/git-push]]
+    */
+  override def deleteRemoteBranch(branchName: BranchName, remote: Remote = Remote.origin): F[Unit]
+
+  /** Download objects and refs from another repository.
+    *
+    * [[https://git-scm.com/docs/git-fetch]]
+    */
+  def fetch(remote: Remote = Remote.origin): F[Unit]
+
+  /** Create an empty Git repository or reinitialize an existing one.
+    *
+    * [[https://git-scm.com/docs/git-init]]
+    */
+  def init(using CmdLogger[F]): F[GitInitResult]
 
 object Git4sRepository:
   def apply[F[_]: Async](using WorkingCtx, CmdRunner[F]): Git4sRepository[F] = new Git4sRepository[F]:
-    override def status(
-      short: Boolean  = false,
-      long: Boolean   = false,
-      branch: Boolean = false
-    )(using CmdLogger[F]): F[GitStatus] =
+
+    override def currentBranch(using CmdLogger[F]): F[BranchName] =
+      GitCmd.rev[F].addArgs("--parse", "--abbrev-ref", "HEAD").run
+
+    override def status(using CmdLogger[F]): F[GitStatus] =
+      GitCmd.status[F].run
+
+    override def push(
+      remote: Remote                   = Remote.origin,
+      sourceBranch: Option[BranchName] = None,
+      remoteBranch: Option[BranchName] = None,
+      force: Boolean                   = false
+    )(using CmdLogger[F]): F[Unit] =
+      for {
+        srcDstOption <- (sourceBranch, remoteBranch) match
+          case (None, None)           => None.pure[F]
+          case (Some(src), None)      => s"$src:$src".some.pure[F]
+          case (None, Some(dst))      => currentBranch.map(src => s"$src:$dst".some)
+          case (Some(src), Some(dst)) => s"$src:$dst".some.pure[F]
+
+        _ <- GitCmd
+          .push[F](remote)
+          .addOptArgs(srcDstOption)
+          .addFlagArgs(force -> "--force")
+          .run
+      } yield ()
+
+    override def pull(
+      remote: Remote                   = Remote.origin,
+      targetBranch: Option[BranchName] = None,
+      rebase: Boolean                  = false,
+      fastForwardOnly: Boolean         = false,
+      noFastForward: Boolean           = false,
+      squash: Boolean                  = false,
+      noCommit: Boolean                = false,
+      noVerify: Boolean                = false
+    )(using CmdLogger[F]): F[Unit] =
       GitCmd
-        .status[F]
+        .pull[F](remote, targetBranch)
         .addFlagArgs(
-          short  -> "--short",
-          long   -> "--long",
-          branch -> "--branch"
+          rebase          -> "--rebase",
+          fastForwardOnly -> "--ff-only",
+          noFastForward   -> "--no-ff",
+          squash          -> "--squash",
+          noCommit        -> "--no-commit",
+          noVerify        -> "--no-verify"
         )
         .run
 
-    override def init(
-      quiet: Boolean = false,
-      bare: Boolean  = false
-    )(using CmdLogger[F]): F[GitInitResult] =
-      GitCmd
-        .init[F]
-        .addFlagArgs(
-          quiet -> "--quiet",
-          bare  -> "--bare"
-        )
-        .run
-
-    override def add(
-      pattern: String,
-      dryRun: Boolean             = false,
-      verbose: Boolean            = false,
-      force: Boolean              = false,
-      sparse: Boolean             = false,
-      all: Boolean                = false,
-      noAll: Boolean              = false,
-      refresh: Boolean            = false,
-      ignoreErrors: Boolean       = false,
-      ignoreMissing: Boolean      = false,
-      noWarnEmbeddedRepo: Boolean = false,
-      renormalize: Boolean        = false
-    )(using CmdLogger[F]): F[GitAddResult] =
-      GitCmd
-        .add[F](pattern)
-        .addFlagArgs(
-          dryRun             -> "--dry-run",
-          verbose            -> "--verbose",
-          force              -> "--force",
-          sparse             -> "--sparse",
-          all                -> "--all",
-          noAll              -> "--no-all",
-          refresh            -> "--refresh",
-          ignoreErrors       -> "--ignore-errors",
-          ignoreMissing      -> "--ignore-missing",
-          noWarnEmbeddedRepo -> "--no-warn-embedded-repo",
-          renormalize        -> "--renormalize"
-        )
-        .run
+    override def add(pattern: String = ".")(using CmdLogger[F]): F[GitAddResult] =
+      GitCmd.add[F](pattern).run
 
     override def commit(
       message: String,
-      all: Boolean                 = false,
-      reuseMessage: Option[String] = None,
-      fixup: Option[FixupCommit]   = None,
-      squash: Option[String]       = None,
-      short: Boolean               = false,
-      branch: Boolean              = false
+      fixup: Option[FixupCommit] = None
     )(using CmdLogger[F]): F[GitCommitResult] =
       GitCmd
         .commit[F](message)
         .addOptArgs(
-          reuseMessage.map(c => s"--reuse-message=$c"),
-          fixup.map(f => s"--fixup=${f.tpe} ${f.commit}"),
-          squash.map(s => s"--squash=$s")
-        )
-        .addFlagArgs(
-          all    -> "--all",
-          short  -> "--short",
-          branch -> "--branch"
+          fixup.map(f => s"--fixup=${f.tpe} ${f.commit}")
         )
         .run
+
+    override def checkout(
+      branchName: BranchName,
+      createIfNotExists: Boolean = true
+    ): F[Unit] =
+      GitCmd
+        .checkout[F]
+        .addFlagArgs(
+          createIfNotExists  -> "-b",
+          !createIfNotExists -> "-t"
+        )
+        .addArgs(branchName)
+        .run_
+
+    override def deleteLocalBranch(branchName: BranchName): F[Unit] =
+      GitCmd.branch[F].addArgs("-b", branchName).run_
+
+    override def deleteRemoteBranch(branchName: BranchName, remote: Remote = Remote.origin): F[Unit] =
+      GitCmd.push[F](remote).addArgs("--delete", branchName).run_
+
+    override def fetch(remote: Remote = Remote.origin): F[Unit] =
+      GitCmd.fetch[F](remote).run
+
+    override def init(using CmdLogger[F]): F[GitInitResult] =
+      GitCmd.init[F].run

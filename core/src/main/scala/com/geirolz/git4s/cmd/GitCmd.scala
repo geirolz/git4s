@@ -3,8 +3,9 @@ package com.geirolz.git4s.cmd
 import cats.effect.kernel.Async
 import com.geirolz.git4s.codec.CmdDecoder
 import com.geirolz.git4s.data.*
-import com.geirolz.git4s.data.failure.{GitConfigFailure, GitFailure}
+import com.geirolz.git4s.data.failure.{GitCheckoutFailure, GitConfigFailure, GitFailure}
 import com.geirolz.git4s.data.request.GitConfigTarget
+import com.geirolz.git4s.data.value.{BranchName, Remote}
 import fs2.io.file.Path
 
 private[git4s] object GitCmd:
@@ -32,6 +33,29 @@ private[git4s] object GitCmd:
   def init[F[_]: Async]: GitCmd[F, GitFailure, GitInitResult] =
     git("init")
 
+  /** [[https://git-scm.com/docs/git-pull]] */
+  def pull[F[_]: Async](
+    remote: Remote         = Remote.origin,
+    branch: Option[BranchName] = None
+  ): Cmd[F, GitFailure, Unit] =
+    git("pull", remote).addOptArgs(branch)
+
+    /** [[https://git-scm.com/docs/git-push]] */
+  def push[F[_]: Async](remote: Remote = Remote.origin): Cmd[F, GitFailure, Unit] =
+    git("push", remote)
+
+  /** [[https://git-scm.com/docs/git-fetch]] */
+  def checkout[F[_] : Async]: Cmd[F, GitCheckoutFailure, String] =
+    git("checkout")
+    
+  /** [[https://git-scm.com/docs/git-fetch]] */
+  def fetch[F[_]: Async](remote: Remote = Remote.origin): Cmd[F, GitFailure, Unit] =
+    git("fetch", remote)
+
+  /** [[https://git-scm.com/docs/git-status]] */
+  def rev[F[_] : Async]: Cmd[F, GitFailure, String] =
+    git("rev")
+    
   /** [[https://git-scm.com/docs/git-status]] */
   def status[F[_]: Async]: Cmd[F, GitFailure, GitStatus] =
     git("status")

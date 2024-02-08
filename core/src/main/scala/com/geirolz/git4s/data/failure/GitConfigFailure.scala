@@ -10,7 +10,6 @@ object GitConfigFailure:
   case class KeyNotFound(key: String) extends GitConfigFailure
   case class UnmappedFailure(failure: GitFailure) extends GitConfigFailure, GitFailure.UnmappedFailure(failure)
 
-  @targetName("gitConfigFailureDecoder")
   given CmdDecoder[GitConfigFailure] =
     CmdDecoder.text.flatMap {
       case s"error: key does not contain a section: $key" =>

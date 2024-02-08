@@ -69,10 +69,8 @@ object Git4s:
       override def clone(repository: String, directory: Path)(using CmdLogger[F]): F[Unit] =
         GitCmd.clone(repository, directory).run.void
 
-      // TODO Make workingDirectory implicit
       override def localConfig: Git4sConfig[F] =
         Git4sConfig.local[F]
 
-      // TODO Make workingDirectory implicit
       override def globalConfig: Git4sConfig[F] =
         Git4sConfig.global[F]
