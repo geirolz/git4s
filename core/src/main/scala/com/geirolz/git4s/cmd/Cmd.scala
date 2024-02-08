@@ -32,8 +32,10 @@ private[git4s] case class Cmd[F[_], E, T](
   def withInput(input: Stream[F, String]): Cmd[F, E, T] =
     copy(in = input)
 
-  override def toString: String =
+  def compiled: String =
     (command :: args).mkString(" ")
+
+  override def toString: String = compiled
 
   def run(using WorkingCtx, CmdRunner[F], CmdLogger[F]): F[T]                 = CmdRunner[F].run(this)
   def run_(using WorkingCtx, CmdRunner[F], Functor[F], CmdLogger[F]): F[Unit] = run.void
