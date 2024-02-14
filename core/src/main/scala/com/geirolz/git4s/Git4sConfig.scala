@@ -7,8 +7,14 @@ import com.geirolz.git4s.data.request.GitConfigTarget
 import com.geirolz.git4s.log.CmdLogger
 
 trait Git4sConfig[F[_]](target: GitConfigTarget)(using WorkingCtx):
+
+  /** Get the value of a key in the config */
   def get(key: String)(using CmdLogger[F]): F[Option[String]]
+
+  /** Set the value of a key in the config */
   def set(key: String, value: String)(using CmdLogger[F]): F[Unit]
+
+  /** Unset the value of a key in the config */
   def unset(key: String)(using CmdLogger[F]): F[Unit]
 
 object Git4sConfig:
