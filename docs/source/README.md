@@ -14,6 +14,21 @@ Functional and typesafe library to use git commands in Scala
 libraryDependencies += "com.github.geirolz" %% "git4s" % "@VERSION@"
 ```
 
+## Features
+
+- [x] git init
+- [x] git status
+- [x] git clone
+- [x] git add
+- [x] git commit
+- [x] git push
+- [x] git pull
+- [x] git fetch
+- [x] git checkout
+- [x] git branch
+- [x] git reset 
+- [x] git clean 
+
 ## Contributing
 
 We welcome contributions from the open-source community to make Git4s even better. If you have any bug reports,

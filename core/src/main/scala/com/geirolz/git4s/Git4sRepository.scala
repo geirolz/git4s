@@ -71,6 +71,12 @@ trait Git4sRepository[F[_]]:
     fixup: Option[FixupCommit] = None
   )(using CmdLogger[F]): F[GitCommitResult]
 
+  /** Remove untracked files from the working tree.
+    *
+    * [[https://git-scm.com/docs/git-clean]]
+    */
+  def clean(force: Boolean = false)(using CmdLogger[F]): F[Unit]
+
   // ==================== BRANCH AGNOSTIC ====================
   /** Select the branch with the specified name */
   def checkout(branchName: BranchName, createIfNotExists: Boolean = true): F[Unit]
@@ -165,6 +171,9 @@ object Git4sRepository:
           fixup.map(f => s"--fixup=${f.tpe} ${f.commit}")
         )
         .run
+
+    override def clean(force: Boolean = false)(using CmdLogger[F]): F[Unit] =
+      GitCmd.clean[F].addFlagArgs(force -> "-f").run_
 
     override def checkout(
       branchName: BranchName,

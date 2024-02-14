@@ -44,10 +44,14 @@ private[git4s] object GitCmd:
   def push[F[_]: Async](remote: Remote = Remote.origin): Cmd[F, GitFailure, Unit] =
     git("push", remote)
 
+  /** [[https://git-scm.com/docs/git-clean]] */
+  def clean[F[_] : Async]: Cmd[F, GitFailure, String] =
+    git("clean")
+    
   /** [[https://git-scm.com/docs/git-branch]] */
   def branch[F[_]: Async]: Cmd[F, GitFailure, String] =
     git("branch")
-
+  
   /** [[https://git-scm.com/docs/git-fetch]] */
   def checkout[F[_]: Async]: Cmd[F, GitCheckoutFailure, String] =
     git("checkout")
