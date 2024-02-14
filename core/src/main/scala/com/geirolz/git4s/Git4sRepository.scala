@@ -4,13 +4,16 @@ import cats.effect.kernel.Async
 import com.geirolz.git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
 import com.geirolz.git4s.data.*
 import com.geirolz.git4s.data.request.FixupCommit
-import com.geirolz.git4s.data.value.{BranchName, Remote}
+import com.geirolz.git4s.data.value.{BranchName, CommitId, Remote}
 import com.geirolz.git4s.log.CmdLogger
 import cats.syntax.all.*
 
 // - tag
 // - rename branch
 trait Git4sRepository[F[_]]:
+
+  /** Return a Git4sReset type to perform resets */
+  def reset: Git4sReset[F]
 
   // ==================== BRANCH BASED ====================
   /** Show the current branch.
@@ -76,13 +79,13 @@ trait Git4sRepository[F[_]]:
     *
     * [[https://git-scm.com/docs/git-branch]]
     */
-  override def deleteLocalBranch(branchName: BranchName): F[Unit]
+  def deleteLocalBranch(branchName: BranchName): F[Unit]
 
   /** Delete a branch on the remote.
     *
     * [[https://git-scm.com/docs/git-push]]
     */
-  override def deleteRemoteBranch(branchName: BranchName, remote: Remote = Remote.origin): F[Unit]
+  def deleteRemoteBranch(branchName: BranchName, remote: Remote = Remote.origin): F[Unit]
 
   /** Download objects and refs from another repository.
     *
@@ -98,6 +101,8 @@ trait Git4sRepository[F[_]]:
 
 object Git4sRepository:
   def apply[F[_]: Async](using WorkingCtx, CmdRunner[F]): Git4sRepository[F] = new Git4sRepository[F]:
+
+    override lazy val reset: Git4sReset[F] = Git4sReset[F]
 
     override def currentBranch(using CmdLogger[F]): F[BranchName] =
       GitCmd.rev[F].addArgs("--parse", "--abbrev-ref", "HEAD").run
@@ -175,7 +180,7 @@ object Git4sRepository:
         .run_
 
     override def deleteLocalBranch(branchName: BranchName): F[Unit] =
-      GitCmd.branch[F].addArgs("-b", branchName).run_
+      GitCmd.branch[F].addArgs("-d", branchName).run_
 
     override def deleteRemoteBranch(branchName: BranchName, remote: Remote = Remote.origin): F[Unit] =
       GitCmd.push[F](remote).addArgs("--delete", branchName).run_

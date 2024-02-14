@@ -66,8 +66,8 @@ object Git4s:
       override def help(using CmdLogger[F]): F[String] =
         GitCmd.help.run.map(_.value)
 
-      override def clone(repository: String, directory: Path)(using CmdLogger[F]): F[Unit] =
-        GitCmd.clone(repository, directory).run.void
+      override def clone(repository: String, destination: Path)(using CmdLogger[F]): F[Unit] =
+        GitCmd.clone(repository, destination).run.void
 
       override def localConfig: Git4sConfig[F] =
         Git4sConfig.local[F]

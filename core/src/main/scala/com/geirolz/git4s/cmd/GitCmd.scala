@@ -22,8 +22,8 @@ private[git4s] object GitCmd:
     git("help")
 
   /** [[https://git-scm.com/docs/git-clone]] */
-  def clone[F[_]: Async](repository: String, directory: Path): GitCmd[F, GitFailure, GitCloneResult] =
-    git("clone", repository, directory.toString)
+  def clone[F[_]: Async](repository: String, destination: Path): GitCmd[F, GitFailure, GitCloneResult] =
+    git("clone", repository, destination.toString)
 
   /** [[https://git-scm.com/docs/git-version]] */
   def version[F[_]: Async]: GitCmd[F, GitFailure, GitVersion] =
@@ -35,7 +35,7 @@ private[git4s] object GitCmd:
 
   /** [[https://git-scm.com/docs/git-pull]] */
   def pull[F[_]: Async](
-    remote: Remote         = Remote.origin,
+    remote: Remote             = Remote.origin,
     branch: Option[BranchName] = None
   ): Cmd[F, GitFailure, Unit] =
     git("pull", remote).addOptArgs(branch)
@@ -44,18 +44,22 @@ private[git4s] object GitCmd:
   def push[F[_]: Async](remote: Remote = Remote.origin): Cmd[F, GitFailure, Unit] =
     git("push", remote)
 
+  /** [[https://git-scm.com/docs/git-branch]] */
+  def branch[F[_]: Async]: Cmd[F, GitFailure, String] =
+    git("branch")
+
   /** [[https://git-scm.com/docs/git-fetch]] */
-  def checkout[F[_] : Async]: Cmd[F, GitCheckoutFailure, String] =
+  def checkout[F[_]: Async]: Cmd[F, GitCheckoutFailure, String] =
     git("checkout")
-    
+
   /** [[https://git-scm.com/docs/git-fetch]] */
   def fetch[F[_]: Async](remote: Remote = Remote.origin): Cmd[F, GitFailure, Unit] =
     git("fetch", remote)
 
   /** [[https://git-scm.com/docs/git-status]] */
-  def rev[F[_] : Async]: Cmd[F, GitFailure, String] =
+  def rev[F[_]: Async]: Cmd[F, GitFailure, String] =
     git("rev")
-    
+
   /** [[https://git-scm.com/docs/git-status]] */
   def status[F[_]: Async]: Cmd[F, GitFailure, GitStatus] =
     git("status")
@@ -63,6 +67,10 @@ private[git4s] object GitCmd:
   /** [[https://git-scm.com/docs/git-add]] */
   def add[F[_]: Async](pattern: String): GitCmd[F, GitFailure, GitAddResult] =
     git("add", pattern)
+
+  /** [[https://git-scm.com/docs/git-reset]] */
+  def reset[F[_]: Async]: GitCmd[F, GitFailure, String] =
+    git("reset")
 
   /** [[https://git-scm.com/docs/git-commit]] */
   def commit[F[_]: Async](message: String): GitCmd[F, GitFailure, GitCommitResult] =
