@@ -75,7 +75,11 @@ trait Git4sRepository[F[_]]:
     *
     * [[https://git-scm.com/docs/git-clean]]
     */
-  def clean(force: Boolean = false)(using CmdLogger[F]): F[Unit]
+  def clean(
+    force: Boolean                 = false,
+    recursive: Boolean             = false,
+    dontUseStdIgnoreRules: Boolean = false
+  )(using CmdLogger[F]): F[Unit]
 
   // ==================== BRANCH AGNOSTIC ====================
   /** Select the branch with the specified name */
@@ -172,8 +176,19 @@ object Git4sRepository:
         )
         .run
 
-    override def clean(force: Boolean = false)(using CmdLogger[F]): F[Unit] =
-      GitCmd.clean[F].addFlagArgs(force -> "-f").run_
+    override def clean(
+      force: Boolean                 = false,
+      recursive: Boolean             = false,
+      dontUseStdIgnoreRules: Boolean = false
+    )(using CmdLogger[F]): F[Unit] =
+      GitCmd
+        .clean[F]
+        .addFlagArgs(
+          force                 -> "-f",
+          recursive             -> "-d",
+          dontUseStdIgnoreRules -> "-x"
+        )
+        .run_
 
     override def checkout(
       branchName: BranchName,
