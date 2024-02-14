@@ -8,11 +8,43 @@
 [![Mergify Status](https://img.shields.io/endpoint.svg?url=https://api.mergify.com/v1/badges/geirolz/git4s&style=flat)](https://mergify.io)
 [![GitHub license](https://img.shields.io/github/license/geirolz/git4s)](https://github.com/geirolz/git4s/blob/main/LICENSE)
 
-Functional and typesafe library to use git commands in Scala
+Functional and typesafe library to use git commands in Scala, based on cats, cats-effect and fs2.
 
 ```sbt
 libraryDependencies += "com.github.geirolz" %% "git4s" % "<version>"
 ```
+
+## Features
+**general**
+- [x] git help
+- [x] git init
+
+**installation**
+- [x] git version
+- [x] install git [brew | choco | apt-get]
+- [x] uninstall git [brew | choco | apt-get]
+- [x] reinstall git [brew | choco | apt-get]
+
+**config**
+- [x] git config --get [local | global]
+- [x] git config --unset [local | global]
+- [x] git config [local | global]
+
+**tag**
+- [ ] git tag
+
+**repository**
+- [x] git status
+- [x] git clone
+- [x] git add
+- [x] git commit
+- [x] git push
+- [x] git pull
+- [x] git fetch
+- [x] git checkout
+- [x] git branch [create]
+- [x] git reset [to commit | to HEAD~n]
+- [x] git clean 
 
 ## Contributing
 
