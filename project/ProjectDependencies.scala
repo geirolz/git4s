@@ -20,9 +20,10 @@ object ProjectDependencies {
     "co.fs2"        %% "fs2-io"      % fs2Version,
 
     // test
-    "org.scalameta"  %% "munit"            % munitVersion % Test,
-    "org.scalameta"  %% "munit-scalacheck" % munitVersion % Test,
-    "org.scalacheck" %% "scalacheck"       % scalacheck   % Test
+    "org.scalameta"  %% "munit"               % munitVersion       % Test,
+    "org.typelevel"  %% "munit-cats-effect-3" % munitEffectVersion % Test,
+    "org.scalameta"  %% "munit-scalacheck"    % munitVersion       % Test,
+    "org.scalacheck" %% "scalacheck"          % scalacheck         % Test
   )
 
   object Core {

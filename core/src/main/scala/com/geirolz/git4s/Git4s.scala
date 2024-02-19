@@ -64,10 +64,10 @@ object Git4s:
         Git4s(workingDir = None, installer)
 
       override def help(using CmdLogger[F]): F[String] =
-        GitCmd.help.run.map(_.value)
+        GitCmd.help.runGetLast.map(_.value)
 
       override def clone(repository: String, destination: Path)(using CmdLogger[F]): F[Unit] =
-        GitCmd.clone(repository, destination).run.void
+        GitCmd.clone(repository, destination).runGetLast.void
 
       override def localConfig: Git4sConfig[F] =
         Git4sConfig.local[F]

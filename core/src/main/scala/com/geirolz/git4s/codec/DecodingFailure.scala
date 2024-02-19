@@ -4,4 +4,6 @@ import scala.util.control.NoStackTrace
 
 trait DecodingFailure extends NoStackTrace
 object DecodingFailure:
-  case class GenericDecodingFailure(message: String) extends DecodingFailure
+  def apply(message: String): DecodingFailure = GenericDecodingFailure(message)
+  case class GenericDecodingFailure(message: String) extends DecodingFailure:
+    override def toString: String = s"DecodingFailure: $message"

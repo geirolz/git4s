@@ -1,4 +1,4 @@
-package com.geirolz.git4s.internal
+package com.geirolz.git4s.cmd
 
 import cats.effect.IO
 import com.geirolz.git4s.cmd.Cmd

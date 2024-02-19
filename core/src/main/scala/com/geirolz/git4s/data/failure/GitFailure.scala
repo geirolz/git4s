@@ -1,6 +1,7 @@
 package com.geirolz.git4s.data.failure
 
 import cats.Show
+import cats.effect.kernel.Async
 import com.geirolz.git4s.cmd.error.CmdFailure
 import com.geirolz.git4s.codec.CmdDecoder
 import com.geirolz.git4s.data.failure.GitFailure.{GitGenericFailure, NotInAGitRepository}
@@ -21,11 +22,13 @@ object GitFailure:
   private[git4s] trait UnmappedFailure(failure: GitFailure) extends GitFailure:
     override def toString: String = failure.toString
 
-  given CmdDecoder[GitFailure] =
-    CmdDecoder.text.flatMap {
-      case x if x.startsWith("fatal: not a git repository")   => CmdDecoder.success(NotInAGitRepository)
-      case x if x.startsWith("fatal: not in a git directory") => CmdDecoder.success(NotInAGitRepository)
-      case other                                              => CmdDecoder.success(GitGenericFailure(other))
-    }
+  def parseString(s: String): GitFailure =
+    s match
+      case x if x.startsWith("fatal: not a git repository")   => NotInAGitRepository
+      case x if x.startsWith("fatal: not in a git directory") => NotInAGitRepository
+      case other                                              => GitGenericFailure(other)
+
+  given [F[_]: Async]: CmdDecoder[F, GitFailure] =
+    CmdDecoder.text[F].map(parseString(_))
 
   given Show[GitFailure] = Show.fromToString

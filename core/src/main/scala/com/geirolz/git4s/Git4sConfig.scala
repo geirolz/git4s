@@ -31,12 +31,12 @@ object Git4sConfig:
       def get(key: String)(using CmdLogger[F]): F[Option[String]] =
         GitCmd
           .getConfig(target)(key)
-          .run
+          .runGetLast
           .map(Option(_).filter(_.nonEmpty))
           .handleError(_ => None)
 
       def set(key: String, value: String)(using CmdLogger[F]): F[Unit] =
-        GitCmd.setConfig(target)(key, value).run
+        GitCmd.setConfig(target)(key, value).runGetLast
 
       def unset(key: String)(using CmdLogger[F]): F[Unit] =
-        GitCmd.unsetConfig(target)(key).run
+        GitCmd.unsetConfig(target)(key).runGetLast

@@ -38,10 +38,10 @@ object GitInstaller:
     import WorkingCtx.global.given
 
     def installWith(app: String)(using CmdLogger[F]): F[Unit] =
-      Cmd.simple_(app, "install", "git").run
+      Cmd.simple_(app, "install", "git").runGetLast
 
     def uninstallWith(app: String)(using CmdLogger[F]): F[Unit] =
-      Cmd.simple_(app, "uninstall", "git").run
+      Cmd.simple_(app, "uninstall", "git").runGetLast
 
     GitInstaller.instance[F](
       installF = {
@@ -81,4 +81,4 @@ object GitInstaller:
         version.attempt.map(_.isRight)
 
       override def version(using CmdLogger[F]): F[GitVersion] =
-        GitCmd.version[F].run
+        GitCmd.version[F].runGetLast

@@ -1,5 +1,6 @@
 package com.geirolz.git4s.data
 
+import cats.effect.kernel.Async
 import cats.syntax.all.*
 import com.geirolz.git4s.codec.CmdDecoder
 import com.geirolz.git4s.codec.DecodingFailure.GenericDecodingFailure
@@ -9,15 +10,16 @@ case class GitVersion(major: Int, minor: Int, patch: Int):
 
 object GitVersion:
 
-  given CmdDecoder[GitVersion] = CmdDecoder.instance {
-    _.trim match
+  given [F[_]: Async]: CmdDecoder[F, GitVersion] =
+    CmdDecoder.text[F].emap {
       case s"git version $major.$minor.$patch" =>
-        GitVersion(major.toInt, minor.toInt, patch.toInt).asRight
+        Right(GitVersion(major.toInt, minor.toInt, patch.toInt))
       case result =>
-        GenericDecodingFailure(
-          s"""Invalid version format.
+        Left(
+          GenericDecodingFailure(
+            s"""Invalid version format.
                 |Expected: git version <major>.<minor>.<patch>
                 |Got: [$result]""".stripMargin
-        ).asLeft
-
-  }
+          )
+        )
+    }

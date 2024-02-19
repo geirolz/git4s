@@ -8,5 +8,5 @@ import com.geirolz.git4s.codec.DecodingFailure.GenericDecodingFailure
 
 case class GitCommitResult(value: String) extends AnyVal
 object GitCommitResult:
-  given CmdDecoder[GitCommitResult] =
-    CmdDecoder.text.map(GitCommitResult(_))
+  given [F[_]: Async]: CmdDecoder[F, GitCommitResult] =
+    CmdDecoder.text[F].map(GitCommitResult(_))

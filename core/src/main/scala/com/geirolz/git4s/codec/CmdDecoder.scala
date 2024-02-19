@@ -1,67 +1,48 @@
 package com.geirolz.git4s.codec
 
-import cats.ApplicativeError
+import cats.effect.kernel.Async
 import com.geirolz.git4s.codec.CmdDecoder.instance
+import fs2.{Pipe, Stream}
 
-trait CmdDecoder[T]:
-  def decode(p: String): CmdDecoder.Result[T]
-  def map[U](f: T => U): CmdDecoder[U]
-  def flatMap[U](f: T => CmdDecoder[U]): CmdDecoder[U]
-  def handleErrorWith[U >: T](f: DecodingFailure => CmdDecoder[U]): CmdDecoder[U]
+trait CmdDecoder[F[_], T]:
+  def decode: Pipe[F, String, CmdDecoder.Result[T]]
+  def map[U](f: T => U): CmdDecoder[F, U]
+  def emap[U](f: T => CmdDecoder.Result[U]): CmdDecoder[F, U]
 
 object CmdDecoder extends ProcessDecoderInstances:
 
   type Result[T] = Either[DecodingFailure, T]
 
-  inline def apply[T](using d: CmdDecoder[T]): CmdDecoder[T] = d
+  inline def apply[F[_], T](using d: CmdDecoder[F, T]): CmdDecoder[F, T] = d
 
-  inline def success[T](t: T): CmdDecoder[T] =
-    instance[T](_ => Right(t))
+  inline def success[F[_]: Async, T](t: T): CmdDecoder[F, T] =
+    const(Right(t))
 
-  inline def failed[T](e: DecodingFailure): CmdDecoder[T] =
-    instance(_ => Left(e))
+  inline def failed[F[_]: Async, T](e: DecodingFailure): CmdDecoder[F, T] =
+    const(Left(e))
 
-  def instance[T](f: String => CmdDecoder.Result[T]): CmdDecoder[T] =
-    new CmdDecoder[T]:
-      override def decode(s: String): CmdDecoder.Result[T] =
-        f(s)
+  inline def const[F[_]: Async, T](result: CmdDecoder.Result[T]): CmdDecoder[F, T] =
+    instance[F, T](_.drain.merge(Stream.emit(result).covary[F]))
 
-      override def map[U](f: T => U): CmdDecoder[U] =
-        instance(input => decode(input).map(f))
+  def lines[F[_]: Async, T](pipe: Pipe[F, String, CmdDecoder.Result[T]]): CmdDecoder[F, T] =
+    instance(_.through(fs2.text.lines[F]).through(pipe))
 
-      override def flatMap[U](f: T => CmdDecoder[U]): CmdDecoder[U] =
-        instance(input =>
-          decode(input) match
-            case Right(value) => f(value).decode(input)
-            case Left(e)      => Left(e)
-        )
+  def instance[F[_]: Async, T](pipe: Pipe[F, String, CmdDecoder.Result[T]]): CmdDecoder[F, T] =
+    new CmdDecoder[F, T]:
 
-      override def handleErrorWith[U >: T](f: DecodingFailure => CmdDecoder[U]): CmdDecoder[U] =
-        instance(input =>
-          decode(input) match
-            case Left(e) => f(e).decode(input)
-            case r       => r
-        )
+      override def decode: Pipe[F, String, CmdDecoder.Result[T]] =
+        pipe
+
+      override def map[U](f: T => U): CmdDecoder[F, U] =
+        instance(s => decode(s).map(_.map(f)))
+
+      override def emap[U](f: T => Result[U]): CmdDecoder[F, U] =
+        instance(s => decode(s).map(_.flatMap(f)))
 
 transparent sealed trait ProcessDecoderInstances:
 
-  given unit: CmdDecoder[Unit] =
+  given unit[F[_]: Async]: CmdDecoder[F, Unit] =
     CmdDecoder.success(())
 
-  given text: CmdDecoder[String] =
-    instance(s => Right(s.trim))
-
-  given [F[_]]: ApplicativeError[CmdDecoder, DecodingFailure] =
-    new ApplicativeError[CmdDecoder, DecodingFailure]:
-
-      override def raiseError[A](e: DecodingFailure): CmdDecoder[A] =
-        CmdDecoder.failed(e)
-
-      override def handleErrorWith[A](fa: CmdDecoder[A])(f: DecodingFailure => CmdDecoder[A]): CmdDecoder[A] =
-        fa.handleErrorWith(f)
-
-      override def pure[A](x: A): CmdDecoder[A] =
-        CmdDecoder.success(x)
-
-      override def ap[A, B](ff: CmdDecoder[A => B])(fa: CmdDecoder[A]): CmdDecoder[B] =
-        ff.flatMap(f => fa.map(a => f(a)))
+  given text[F[_]: Async]: CmdDecoder[F, String] =
+    instance(_.scan("")(_ + _).lastOr("").map(s => Right(s.trim)))

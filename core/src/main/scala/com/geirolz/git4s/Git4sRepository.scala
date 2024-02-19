@@ -7,15 +7,35 @@ import com.geirolz.git4s.data.request.FixupCommit
 import com.geirolz.git4s.data.value.{BranchName, CommitId, Remote}
 import com.geirolz.git4s.log.CmdLogger
 import cats.syntax.all.*
+import com.geirolz.git4s.data.diff.FileDiff
+import fs2.Stream
 
 // - tag
 // - rename branch
 trait Git4sRepository[F[_]]:
 
+  // ==================== BRANCH BASED ====================
+  /** Show changes between commits, commit and working tree, etc
+    *
+    * [[https://git-scm.com/docs/git-diff]]
+    */
+  def diff(
+    pattern: Option[String] = None,
+    added: Boolean          = true,
+    copied: Boolean         = true,
+    deleted: Boolean        = true,
+    modified: Boolean       = true,
+    renamed: Boolean        = true,
+    typeChanged: Boolean    = true,
+    unmerged: Boolean       = true,
+    unknown: Boolean        = true,
+    broken: Boolean         = true,
+    allOrNone: Boolean      = true
+  )(using CmdLogger[F]): Stream[F, FileDiff]
+
   /** Return a Git4sReset type to perform resets */
   def reset: Git4sReset[F]
 
-  // ==================== BRANCH BASED ====================
   /** Show the current branch.
     *
     * [[https://git-scm.com/docs/git-rev-parse]]
@@ -114,11 +134,45 @@ object Git4sRepository:
 
     override lazy val reset: Git4sReset[F] = Git4sReset[F]
 
+    override def diff(
+      pattern: Option[String] = None,
+      added: Boolean          = true,
+      copied: Boolean         = true,
+      deleted: Boolean        = true,
+      modified: Boolean       = true,
+      renamed: Boolean        = true,
+      typeChanged: Boolean    = true,
+      unmerged: Boolean       = true,
+      unknown: Boolean        = true,
+      broken: Boolean         = true,
+      allOrNone: Boolean      = false
+    )(using CmdLogger[F]): Stream[F, FileDiff] =
+
+      val mayFilter: Option[String] =
+        List(
+          added       -> "A",
+          copied      -> "C",
+          deleted     -> "D",
+          modified    -> "M",
+          renamed     -> "R",
+          typeChanged -> "T",
+          unmerged    -> "U",
+          unknown     -> "X",
+          broken      -> "B",
+          allOrNone   -> "*"
+        ).collect { case (true, value) => value }
+          .mkString
+          .some
+          .filterNot(_.isEmpty)
+          .map(v => s"--diff-filter=$v")
+
+      GitCmd.diff[F].addOptArgs(mayFilter, pattern).stream
+
     override def currentBranch(using CmdLogger[F]): F[BranchName] =
-      GitCmd.rev[F].addArgs("--parse", "--abbrev-ref", "HEAD").run
+      GitCmd.revParse[F].addArgs("--abbrev-ref", "HEAD").runGetLast
 
     override def status(using CmdLogger[F]): F[GitStatus] =
-      GitCmd.status[F].run
+      GitCmd.status[F].runGetLast
 
     override def push(
       remote: Remote                   = Remote.origin,
@@ -137,7 +191,7 @@ object Git4sRepository:
           .push[F](remote)
           .addOptArgs(srcDstOption)
           .addFlagArgs(force -> "--force")
-          .run
+          .runGetLast
       } yield ()
 
     override def pull(
@@ -160,10 +214,10 @@ object Git4sRepository:
           noCommit        -> "--no-commit",
           noVerify        -> "--no-verify"
         )
-        .run
+        .runGetLast
 
     override def add(pattern: String = ".")(using CmdLogger[F]): F[GitAddResult] =
-      GitCmd.add[F](pattern).run
+      GitCmd.add[F](pattern).runGetLast
 
     override def commit(
       message: String,
@@ -174,7 +228,7 @@ object Git4sRepository:
         .addOptArgs(
           fixup.map(f => s"--fixup=${f.tpe} ${f.commit}")
         )
-        .run
+        .runGetLast
 
     override def clean(
       force: Boolean                 = false,
@@ -210,7 +264,7 @@ object Git4sRepository:
       GitCmd.push[F](remote).addArgs("--delete", branchName).run_
 
     override def fetch(remote: Remote = Remote.origin): F[Unit] =
-      GitCmd.fetch[F](remote).run
+      GitCmd.fetch[F](remote).runGetLast
 
     override def init(using CmdLogger[F]): F[GitInitResult] =
-      GitCmd.init[F].run
+      GitCmd.init[F].runGetLast

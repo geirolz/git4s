@@ -1,5 +1,6 @@
 package com.geirolz.git4s.data
 
+import cats.effect.kernel.Async
 import cats.syntax.all.*
 import com.geirolz.git4s.codec.CmdDecoder
 import fs2.io.file.Path
@@ -11,8 +12,8 @@ object GitInitResult:
   case class InitializedEmptyRepository(path: Path) extends GitInitResult
   case class ReinitializedExistingRepository(path: Path) extends GitInitResult
 
-  given CmdDecoder[GitInitResult] =
-    CmdDecoder.text.map {
+  given [F[_]: Async]: CmdDecoder[F, GitInitResult] =
+    CmdDecoder.text[F].map {
       case s"Initialized empty Git repository in $path" =>
         InitializedEmptyRepository(Path(path))
       case s"Reinitialized existing Git repository in $path" =>

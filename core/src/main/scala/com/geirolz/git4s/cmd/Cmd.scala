@@ -9,36 +9,44 @@ import com.geirolz.git4s.log.CmdLogger
 import fs2.Stream
 import fs2.io.file.Path
 
-private[git4s] case class Cmd[F[_], E, T](
-  decoder: CmdDecoder[T],
-  errorDecoder: CmdDecoder[E],
+private[git4s] final case class Cmd[F[_]: Async, E, T](
+  decoder: CmdDecoder[F, T],
+  errorDecoder: CmdDecoder[F, E],
   command: String,
   args: List[String]    = List.empty,
   in: Stream[F, String] = Stream.empty
 ):
 
-  def setArgs(args: String*): Cmd[F, E, T] =
+  inline def setArgs(args: String*): Cmd[F, E, T] =
     copy(args = args.toList.filter(_.nonEmpty))
 
-  def addArgs(args: String*): Cmd[F, E, T] =
+  inline def addArgs(args: String*): Cmd[F, E, T] =
     setArgs(this.args ++ args*)
 
-  def addOptArgs(args: Option[String]*): Cmd[F, E, T] =
+  inline def addOptArgs(args: Option[String]*): Cmd[F, E, T] =
     addArgs(args.flatten.toList*)
 
-  def addFlagArgs(flags: (Boolean, String)*): Cmd[F, E, T] =
+  inline def addFlagArgs(flags: (Boolean, String)*): Cmd[F, E, T] =
     addArgs(flags.collect { case (true, flag) => flag }*)
 
-  def withInput(input: Stream[F, String]): Cmd[F, E, T] =
+  inline def withInput(input: Stream[F, String]): Cmd[F, E, T] =
     copy(in = input)
 
-  def compiled: String =
+  /** This may not be the actual command used by the runner */
+  inline def compiled: String =
     (command :: args).mkString(" ")
 
   override def toString: String = compiled
 
-  def run(using WorkingCtx, CmdRunner[F], CmdLogger[F]): F[T]                 = CmdRunner[F].run(this)
-  def run_(using WorkingCtx, CmdRunner[F], Functor[F], CmdLogger[F]): F[Unit] = run.void
+  // ---------------- Runners ----------------
+  def runAsStream(using WorkingCtx, CmdRunner[F], CmdLogger[F]): Stream[F, T] =
+    CmdRunner[F].stream(this)
+
+  def runGetLast(using WorkingCtx, CmdRunner[F], CmdLogger[F]): F[T] =
+    CmdRunner[F].last(this)
+
+  def run_(using WorkingCtx, CmdRunner[F], Functor[F], CmdLogger[F]): F[Unit] =
+    runGetLast.void
 
 private[git4s] object Cmd:
 
@@ -48,13 +56,13 @@ private[git4s] object Cmd:
   def simple[F[_]: Async](command: String, args: String*): Cmd[F, CmdError, String] =
     apply[F, CmdError, String](command, args: _*)
 
-  def apply[F[_], E: CmdDecoder, T: CmdDecoder](
+  def apply[F[_]: Async, E: CmdDecoder[F, *], T: CmdDecoder[F, *]](
     command: String,
     args: String*
   ): Cmd[F, E, T] =
     new Cmd(
-      decoder      = CmdDecoder[T],
-      errorDecoder = CmdDecoder[E],
+      decoder      = CmdDecoder[F, T],
+      errorDecoder = CmdDecoder[F, E],
       command      = command,
       args         = args.toList
     )
