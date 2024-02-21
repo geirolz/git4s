@@ -45,4 +45,10 @@ transparent sealed trait ProcessDecoderInstances:
     CmdDecoder.success(())
 
   given text[F[_]: Async]: CmdDecoder[F, String] =
-    instance(_.scan("")(_ + _).lastOr("").map(s => Right(s.trim)))
+    instance(
+      _.scan(Option.empty[String])((acc, line) =>
+        acc match
+          case None           => Some(line)
+          case Some(accValue) => Some(accValue + line)
+      ).lastOr(None).collect { case Some(value) => Right(value) }
+    )

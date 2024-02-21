@@ -49,5 +49,5 @@ val git4s: Git4s[IO] = Git4s[IO].withWorkingDirectory(path)
 //git4s.diff(Some("main")).compile.toList.unsafeRunSync()
 
 //res.size
-//git4s.status().unsafeRunSync()
+git4s.status.unsafeRunSync()
 //git4s.localConfig.unset("tesd").unsafeRunSync()

@@ -23,7 +23,6 @@ class CmdHistoryLogger[F[_]: Async](
     in: Stream[F, String],
     exitCode: Int
   )(using WorkingCtx): F[String => F[Unit]] =
-    println(filter(exitCode))
     formatter
       .format[F](
         compiledCmd = compiledCmd,
