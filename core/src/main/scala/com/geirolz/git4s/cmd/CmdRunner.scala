@@ -18,10 +18,13 @@ private[git4s] object CmdRunner:
 
   def fromCmdProcess[F[_]: Async](fp: WorkingCtx ?=> Cmd[F, ?, ?] => Resource[F, CmdProcess[F]]): CmdRunner[F] =
     new CmdRunner[F]:
+
+      /** This semantically blocks until the process is finished and then returns the output as a Stream. */
       override def stream[E, T](cmd: Cmd[F, E, T])(using WorkingCtx, CmdLogger[F]): Stream[F, T] =
         Stream
           .eval(
             fp(cmd).use((p: CmdProcess[F]) =>
+              // this is blocking
               p.exitValue.flatMap {
                 case 0 =>
                   CmdLogger[F]
