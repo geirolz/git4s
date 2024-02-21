@@ -166,7 +166,7 @@ object Git4sRepository:
           .filterNot(_.isEmpty)
           .map(v => s"--diff-filter=$v")
 
-      GitCmd.diff[F].addOptArgs(mayFilter, pattern).stream
+      GitCmd.diff[F].addOptArgs(mayFilter, pattern).runAsStream
 
     override def currentBranch(using CmdLogger[F]): F[BranchName] =
       GitCmd.revParse[F].addArgs("--abbrev-ref", "HEAD").runGetLast

@@ -7,12 +7,47 @@ import com.geirolz.git4s.data.GitVersion
 import com.geirolz.git4s.log.CmdLogger
 import fs2.io.file.Path
 
+/** Git4s is a pure functional wrapper around the git command line.
+  *
+  * It provides a set of methods to interact with a git.
+  *
+  * You can create a Git4s instance using the `apply` method.
+  *
+  * Logging is done using the `CmdLogger` type class implicitly passed to each method. You can provide your own
+  * implementation of `CmdLogger` to log the command output as you like, or use the default one provided by the library.
+  * By default, the library uses the `Noop` logger which doesn't log anything since usually these logs are useful just
+  * for debugging purpose.
+  *
+  * Example:
+  * {{{
+  *  import cats.effect.IO
+  *  import com.geirolz.git4s.Git4s
+  *  import com.geirolz.git4s.data.GitVersion
+  *  import com.geirolz.git4s.log.*
+  *
+  *  given logger: CmdLogger[IO] = CmdLogger.console[IO](LogFilter.all)
+  *  val result: IO[GitVersion] = Git4s[IO].version
+  * }}}
+  *
+  * @tparam F
+  *   the effect type
+  */
 sealed trait Git4s[F[_]] extends GitInstaller[F], Git4sRepository[F]:
 
   // directory
+  /** Set the working directory for the Git4s instance. */
   inline def withWorkingDirectory(dir: String): Git4s[F] = withWorkingDirectory(Path(dir))
+
+  /** Set the working directory for the Git4s instance. */
   def withWorkingDirectory(dir: Path): Git4s[F]
+
+  /** Instruct Git4s to use the current working directory. */
   def withCurrentWorkingDirectory: Git4s[F]
+
+  /** Get the current working directory if set.
+    *
+    * `None` means current director.
+    */
   def workingDirectory: Option[Path]
 
   // basic commands

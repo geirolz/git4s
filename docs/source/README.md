@@ -45,6 +45,27 @@ libraryDependencies += "com.github.geirolz" %% "git4s" % "@VERSION@"
 - [x] git branch [create]
 - [x] git reset [to commit | to HEAD~n]
 - [x] git clean 
+- [ ] git diff 
+
+## Usage
+
+You can create a Git4s instance using the `apply` method.
+
+Logging is done using the `CmdLogger` type class implicitly passed to each method. You can provide your own
+implementation of `CmdLogger` to log the command output as you like, or use the default one provided by the library.
+By default, the library uses the `Noop` logger which doesn't log anything since usually these logs are useful just
+for debugging purpose.
+
+Example:
+```scala mdoc:reset
+ import cats.effect.IO
+ import com.geirolz.git4s.Git4s
+ import com.geirolz.git4s.data.GitVersion
+ import com.geirolz.git4s.log.*
+
+ given logger: CmdLogger[IO] = CmdLogger.console[IO](LogFilter.all)
+ val result: IO[GitVersion] = Git4s[IO].version
+```
 
 ## Contributing
 

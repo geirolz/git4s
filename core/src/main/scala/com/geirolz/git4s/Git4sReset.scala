@@ -31,10 +31,10 @@ object Git4sReset:
   def apply[F[_]: Async](using WorkingCtx, CmdRunner[F]): Git4sReset[F] = new Git4sReset[F]:
 
     override def apply()(using CmdLogger[F]): F[Unit] =
-      GitCmd.reset.runGetLast_
+      GitCmd.reset.run_
 
     override def toCommit(mode: GitResetMode, commitId: CommitId)(using CmdLogger[F]): F[Unit] =
-      GitCmd.reset.addArgs(mode.asArg, commitId.value).runGetLast_
+      GitCmd.reset.addArgs(mode.asArg, commitId.value).run_
 
     override def backToNCommit(mode: GitResetMode, n: Int)(using CmdLogger[F]): F[Unit] =
-      GitCmd.reset.addArgs(mode.asArg, s"HEAD~$n").runGetLast_
+      GitCmd.reset.addArgs(mode.asArg, s"HEAD~$n").run_
