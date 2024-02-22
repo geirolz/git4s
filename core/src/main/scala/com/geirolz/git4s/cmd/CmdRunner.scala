@@ -1,6 +1,7 @@
 package com.geirolz.git4s.cmd
 
 import cats.effect.kernel.{Async, Resource}
+import cats.effect.std.Queue
 import cats.syntax.all.*
 import com.geirolz.git4s.cmd.error.CmdFailure
 import com.geirolz.git4s.log.CmdLogger
@@ -26,33 +27,42 @@ private[git4s] object CmdRunner:
           .evalMap((p: CmdProcess[F]) => {
             for {
               _        <- Async[F].unit
-              outTopic <- Topic[F, String]
-              errTopic <- Topic[F, String]
-              out: Stream[F, T] = p.stdout
-                .evalTap(outTopic.publish1(_))
-                .through(cmd.decoder.decode)
-                .rethrow
-                .evalTap(_ => outTopic.close.void)
-              err: Stream[F, Any] =
-                p.stderr
-                  .evalTap(errTopic.publish1(_))
-                  .through(cmd.errorDecoder.decode)
+              outTopic <- Queue.unbounded[F, String]
+              errTopic <- Queue.unbounded[F, String]
+              out: Stream[F, T] =
+                p.stdout
+                  .evalTap(outTopic.tryOffer(_).void)
+                  .debug()
+                  .through(cmd.decoder.decode)
                   .rethrow
-                  .flatMap {
-                    case e: Throwable => Stream.raiseError(e)
-                    case e: E         => Stream.raiseError(CmdFailure(e.toString))
-                  }
-                  .evalTap(_ => errTopic.close.void)
-                  .ifEmpty(Stream.eval(errTopic.close.void))
 
-              logStream = Stream
-                .eval(p.exitValue)
-                .evalMap(exitCode => CmdLogger[F].log(cmd.compiled, cmd.in, exitCode).tupleLeft(exitCode))
-                .flatMap {
-                  case (0, logAction) => outTopic.subscribeUnbounded.evalMap(logAction).drain
-                  case (_, logAction) => errTopic.subscribeUnbounded.evalMap(logAction).drain
-                }
-            } yield out.merge(logStream).concurrently(err)
+              err: Stream[F, Nothing] =
+                p.stderr
+                  .evalTap(errTopic.tryOffer(_).void)
+                  .through(cmd.errorDecoder.decode)
+                  .flatMap {
+                    case Left(e)             => Stream.raiseError(e)
+                    case Right(e: Throwable) => Stream.raiseError(e)
+                    case Right(e: E)         => Stream.raiseError(CmdFailure(e.toString))
+                  }
+
+              logStream: Stream[F, Nothing] =
+                Stream
+                  .eval(p.exitValue)
+                  .evalMap(exitCode => CmdLogger[F].log(cmd.compiled, cmd.in, exitCode).tupleLeft(exitCode))
+                  .map {
+                    case (0, logAction) => (outTopic, logAction)
+                    case (_, logAction) => (errTopic, logAction)
+                  }
+                  .flatMap { case (queue, logAction) =>
+                    Stream
+                      .eval(queue.tryTake)
+                      .repeat
+                      .unNoneTerminate
+                      .evalMap(logAction)
+                      .drain
+                  }
+            } yield out.merge(err).merge(logStream)
           })
           .flatten
 
