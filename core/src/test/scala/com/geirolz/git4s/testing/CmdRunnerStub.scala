@@ -16,7 +16,8 @@ class CmdRunnerStub[F[_]: Async: Console]:
       CmdProcess[F](
         _isAlive   = false.pure[F],
         _exitValue = 0.pure[F],
-        _stdout    = str,
+        _stdin     = _.drain,
+        _stdout    = str.through(fs2.text.utf8.encode),
         _stderr    = fs2.Stream.empty
       )
     )(f)
@@ -37,8 +38,9 @@ class CmdRunnerStub[F[_]: Async: Console]:
       CmdProcess[F](
         _isAlive   = false.pure[F],
         _exitValue = exitCode.pure[F],
+        _stdin     = _.drain,
         _stdout    = fs2.Stream.empty,
-        _stderr    = str
+        _stderr    = str.through(fs2.text.utf8.encode)
       )
     )(f)
 

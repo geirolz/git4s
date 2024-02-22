@@ -1,32 +1,36 @@
 package com.geirolz.git4s.cmd
 
-import cats.effect.kernel.Async
+import fs2.{Pipe, Stream}
 import fs2.io.process.Process
-import fs2.{Stream, text}
 
 trait CmdProcess[F[_]]:
   def isAlive: F[Boolean]
   def exitValue: F[Int]
-  def stdout: Stream[F, String]
-  def stderr: Stream[F, String]
+  def stdin: Pipe[F, Byte, Nothing]
+  def stdout: Stream[F, Byte]
+  def stderr: Stream[F, Byte]
 
 object CmdProcess:
 
-  def apply[F[_]: Async](
-    _isAlive: F[Boolean],
-    _exitValue: F[Int],
-    _stdout: Stream[F, String],
-    _stderr: Stream[F, String]
+  def apply[F[_]](
+    _isAlive: => F[Boolean],
+    _exitValue: => F[Int],
+    _stdin: => Pipe[F, Byte, Nothing],
+    _stdout: => Stream[F, Byte],
+    _stderr: => Stream[F, Byte]
   ): CmdProcess[F] =
     new CmdProcess[F]:
-      def isAlive: F[Boolean]       = _isAlive
-      def exitValue: F[Int]         = _exitValue
-      def stdout: Stream[F, String] = _stdout
-      def stderr: Stream[F, String] = _stderr
+      override def isAlive: F[Boolean]           = _isAlive
+      override def exitValue: F[Int]             = _exitValue
+      override def stdin: Pipe[F, Byte, Nothing] = _stdin
+      override def stdout: Stream[F, Byte]       = _stdout
+      override def stderr: Stream[F, Byte]       = _stderr
 
-  def fromProcess[F[_]: Async](process: Process[F], in: Stream[F, String]): CmdProcess[F] = new CmdProcess[F]:
-    private val inUtf8: Stream[F, Nothing] = in.through(text.utf8.encode).through(process.stdin)
-    def isAlive: F[Boolean]                = process.isAlive
-    def exitValue: F[Int]                  = process.exitValue
-    def stdout: Stream[F, String]          = process.stdout.through(text.utf8.decode).concurrently(inUtf8)
-    def stderr: Stream[F, String]          = process.stderr.through(text.utf8.decode)
+  def fromProcess[F[_]](p: Process[F]): CmdProcess[F] =
+    CmdProcess(
+      _isAlive   = p.isAlive,
+      _exitValue = p.exitValue,
+      _stdin     = p.stdin,
+      _stdout    = p.stdout,
+      _stderr    = p.stderr
+    )

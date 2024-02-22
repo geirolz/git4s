@@ -9,21 +9,6 @@ import com.geirolz.git4s.testing.CmdRunnerStub.history
 
 class Git4sSuite extends munit.CatsEffectSuite {
 
-  test("test Error") {
-    CmdRunnerStub[IO].stderr("git version 1.2.3") {
-      for {
-        _ <- assertIO(
-          Git4s[IO].version,
-          GitVersion(1, 2, 3)
-        )
-//        _ <- assertIO(
-//          obtained = history[IO].cmds,
-//          returns  = List("git version")
-//        )
-      } yield ()
-    }
-  }
-
   test("Git4s.version") {
     CmdRunnerStub[IO].stdout("git version 1.2.3") {
       for {

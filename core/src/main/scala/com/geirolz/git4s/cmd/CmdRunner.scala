@@ -5,10 +5,9 @@ import cats.effect.std.Queue
 import cats.syntax.all.*
 import com.geirolz.git4s.cmd.error.CmdFailure
 import com.geirolz.git4s.log.CmdLogger
-import fs2.Stream
-import fs2.concurrent.Topic
 import fs2.io.file.Path
 import fs2.io.process.*
+import fs2.{text, Stream}
 
 trait CmdRunner[F[_]]:
   def stream[E, T](pd: Cmd[F, E, T])(using WorkingCtx, CmdLogger[F]): Stream[F, T]
@@ -29,8 +28,16 @@ private[git4s] object CmdRunner:
               _        <- Async[F].unit
               outTopic <- Queue.unbounded[F, String]
               errTopic <- Queue.unbounded[F, String]
+
+              in: Stream[F, Nothing] =
+                cmd.in
+                  .through(text.utf8.encode)
+                  .through(p.stdin)
+
               out: Stream[F, T] =
                 p.stdout
+                  .through(text.utf8.decode)
+                  .concurrently(in)
                   .evalTap(outTopic.tryOffer(_).void)
                   .debug()
                   .through(cmd.decoder.decode)
@@ -38,6 +45,7 @@ private[git4s] object CmdRunner:
 
               err: Stream[F, Nothing] =
                 p.stderr
+                  .through(text.utf8.decode)
                   .evalTap(errTopic.tryOffer(_).void)
                   .through(cmd.errorDecoder.decode)
                   .flatMap {
@@ -74,5 +82,5 @@ private[git4s] object CmdRunner:
 
       applyWorkingDir(ProcessBuilder(cmd.command, cmd.args*))
         .spawn[F]
-        .map(CmdProcess.fromProcess[F](_, cmd.in))
+        .map(CmdProcess.fromProcess[F](_))
     })
