@@ -7,7 +7,7 @@ import com.geirolz.git4s.cmd.error.CmdFailure
 import com.geirolz.git4s.log.CmdLogger
 import fs2.io.file.Path
 import fs2.io.process.*
-import fs2.{Stream, text}
+import fs2.{text, Stream}
 
 trait CmdRunner[F[_]]:
   def stream[E, T](pd: Cmd[F, E, T])(using WorkingCtx, CmdLogger[F]): Stream[F, T]
@@ -65,7 +65,7 @@ private[git4s] object CmdRunner:
                   .drain
               }
 
-          result <- out.merge(err).onComplete(log)
+          result <- out.merge(err).merge(log)
         } yield result
 
   given [F[_]: Processes](using F: Async[F]): CmdRunner[F] =
