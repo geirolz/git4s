@@ -65,7 +65,7 @@ private[git4s] object CmdRunner:
                   .drain
               }
 
-          result <- out.merge(err).merge(log)
+          result <- out.merge(err).onComplete(log)
         } yield result
 
   given [F[_]: Processes](using F: Async[F]): CmdRunner[F] =
