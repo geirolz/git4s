@@ -4,7 +4,7 @@ import cats.Applicative
 import cats.effect.kernel.Async
 import cats.effect.std.Console
 import cats.syntax.all.*
-import com.geirolz.git4s.cmd.{WorkingCtx, currentWorkingDir}
+import com.geirolz.git4s.cmd.{currentWorkingDir, WorkingCtx}
 import com.geirolz.git4s.log.history.CmdHistoryLogger
 import fs2.Stream
 
