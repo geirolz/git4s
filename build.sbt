@@ -3,7 +3,7 @@ import sbt.project
 lazy val prjName                = "git4s"
 lazy val prjDescription         = "A functional, type-safe and composable Scala library for Git"
 lazy val org                    = "com.github.geirolz"
-lazy val scala33                = "3.3.1"
+lazy val scala33                = "3.3.3"
 lazy val supportedScalaVersions = List(scala33)
 
 //## global project to no publish ##
