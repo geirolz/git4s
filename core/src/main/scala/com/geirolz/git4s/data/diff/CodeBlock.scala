@@ -22,6 +22,10 @@ case class CodeBlock(
        |${lines.toList.mkString("\n")}""".stripMargin
 
 object CodeBlock:
+  
+  def withoutInfo(lines: Chunk[String]): CodeBlock = 
+    CodeBlock(0, 0, 0, 0, lines)
+    
   val empty: CodeBlock = CodeBlock(0, 0, 0, 0, Chunk.empty)
 
   given Show[CodeBlock] = Show.fromToString

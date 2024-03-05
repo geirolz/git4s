@@ -13,13 +13,19 @@ trait FileDiffParser[F[_]]:
 
 object FileDiffParser:
 
+  // errors
   sealed trait ParsingDiffFailure extends NoStackTrace:
     override def getMessage: String = this match
       case PrematureEOS          => "Premature end of stream."
       case MalformedDiff(actual) => s"Malformed diff. Not expected $actual."
-
   case object PrematureEOS extends ParsingDiffFailure
   case class MalformedDiff(actual: String) extends ParsingDiffFailure
+
+  // changes types
+  private sealed trait ChangeType(val symbol: String)
+  private object ChangeType:
+    case object NewLine extends ChangeType("+")
+    case object DeletedLine extends ChangeType("-")
 
   def apply[F[_]](using p: FileDiffParser[F]): FileDiffParser[F] = p
 
@@ -27,37 +33,48 @@ object FileDiffParser:
     new FileDiffParser[F]:
       def parse: Pipe[F, String, FileDiff] = (s: fs2.Stream[F, String]) =>
 
+        // ------------------ EDITED FILE ------------------
+        def goChangeBlock(
+          tpe: ChangeType,
+          source: fs2.Stream[F, String]
+        ): Pull[F, Nothing, (CodeBlock, fs2.Stream[F, String])] =
+          source.groupAdjacentBy(_.startsWith(tpe.symbol)).pull.uncons1.flatMap {
+            case Some(((_, lines), rms)) =>
+              val codeBlock = CodeBlock.withoutInfo(lines.map(_.drop(1)))
+              Pull.pure((codeBlock, source.drop(lines.size)))
+            case None =>
+              // empty file - stream ended
+              Pull.pure((CodeBlock.empty, fs2.Stream.empty))
+          }
+
         // ------------------ NEW OR DELETED FILE ------------------
-        def goNewOrDeletedFile(newFile: Boolean)(
+        def goNewOrDeletedFile(tpe: ChangeType)(
           stream: fs2.Stream[F, String]
         ): Pull[F, Nothing, (NewFile | DeletedFile, fs2.Stream[F, String])] =
 
-          val singleId = if newFile then "+" else "-"
-          val f        = if newFile then NewFile(_, _) else DeletedFile(_, _)
+          val isNewFile: Boolean = tpe == ChangeType.NewLine
+          val f: (Path, CodeBlock) => NewFile | DeletedFile = tpe match
+            case ChangeType.NewLine     => NewFile(_, _)
+            case ChangeType.DeletedLine => DeletedFile(_, _)
 
           stream.drop(1).pull.unconsN(3).flatMap {
             case Some(chunk, rms2: fs2.Stream[F, String]) =>
               chunk.toList match {
                 case s"$idA $_/$pathA" :: s"$idB $_/$pathB" :: s"@@ -$scol,$sline +$ecol,$eline @@" :: Nil =>
-                  val path = if (newFile) pathA else pathB
-                  rms2.groupAdjacentBy(_.startsWith(singleId)).pull.uncons1.flatMap {
-                    case Some(((_, lines), rms3)) =>
-                      val fileDiff: NewFile | DeletedFile =
-                        f(
-                          Path(path),
-                          CodeBlock(
-                            startLine   = sline.toInt,
-                            startColumn = scol.toInt,
-                            endLine     = eline.toInt,
-                            endColumn   = ecol.toInt,
-                            lines       = lines.map(_.drop(1))
-                          )
+                  val path = if (isNewFile) pathA else pathB
+                  goChangeBlock(tpe, rms2).flatMap { case (changes, rms3) =>
+                    val fileDiff: NewFile | DeletedFile =
+                      f(
+                        Path(path),
+                        changes.copy(
+                          startLine   = sline.toInt,
+                          startColumn = scol.toInt,
+                          endLine     = eline.toInt,
+                          endColumn   = ecol.toInt
                         )
+                      )
 
-                      Pull.pure((fileDiff, rms2.drop(lines.size)))
-                    case None =>
-                      // empty file - stream ended
-                      Pull.pure(f(Path(path), CodeBlock.empty), fs2.Stream.empty)
+                    Pull.pure((fileDiff, rms3))
                   }
                 case x =>
                   Pull.raiseError(MalformedDiff(x.mkString("\n")))
@@ -83,12 +100,12 @@ object FileDiffParser:
         def go(s: fs2.Stream[F, String]): Pull[F, FileDiff, Unit] =
           s.pull.uncons1.flatMap {
             case Some(s"new file mode $_", rms: fs2.Stream[F, String]) =>
-              goNewOrDeletedFile(newFile = true)(rms).flatMap { case (newFile, rms2) =>
+              goNewOrDeletedFile(ChangeType.NewLine)(rms).flatMap { case (newFile, rms2) =>
                 Pull.output1(newFile) >> go(rms2)
               }
 
             case Some(s"deleted file mode $_", rms: fs2.Stream[F, String]) =>
-              goNewOrDeletedFile(newFile = false)(rms)
+              goNewOrDeletedFile(ChangeType.DeletedLine)(rms)
                 .flatMap { case (newFile, rms2) => Pull.output1(newFile) >> go(rms2) }
 
             case Some(s"rename from $from", rms: fs2.Stream[F, String]) =>
