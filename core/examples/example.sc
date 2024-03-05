@@ -1,6 +1,5 @@
 import cats.effect.{IO, Resource}
 import cats.effect.unsafe.implicits.global
-import com.geirolz.git4s.data.diff.FileDiff
 import com.geirolz.git4s.{Git4s, Git4sReset}
 import com.geirolz.git4s.data.request.GitConfigKey
 import com.geirolz.git4s.log.{CmdLogger, LogFilter}

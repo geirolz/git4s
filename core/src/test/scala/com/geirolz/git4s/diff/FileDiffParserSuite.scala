@@ -1,14 +1,17 @@
-package com.geirolz.git4s.data.diff
+package com.geirolz.git4s.diff
 
 import cats.effect.IO
 import com.geirolz.git4s.data.diff.FileDiff
 
-class FileDiffSuite extends munit.CatsEffectSuite {
+class FileDiffParserSuite extends munit.CatsEffectSuite {
+
+  private def lines(s: String): fs2.Stream[IO, String] =
+    fs2.Stream.emits(s.split("\n").toSeq)
 
   test("Parse diff with new files") {
 
-    val res: IO[List[FileDiff]] = fs2.Stream
-      .emit(
+    val res: IO[List[FileDiff]] =
+      lines(
         s"""
            |IGNORE THIS LINE
            |${newFile("Baz")}
@@ -17,10 +20,9 @@ class FileDiffSuite extends munit.CatsEffectSuite {
            |IGNORE THIS LINE
            |""".stripMargin
       )
-      .through(FileDiff.given_CmdDecoder_F_FileDiff[IO].decode)
-      .rethrow
-      .compile
-      .toList
+        .through(FileDiffParser[IO].parse)
+        .compile
+        .toList
 
     assertIO(
       obtained = res.map(_.size),
@@ -30,8 +32,8 @@ class FileDiffSuite extends munit.CatsEffectSuite {
 
   test("Parse diff with deleted files") {
 
-    val res: IO[List[FileDiff]] = fs2.Stream
-      .emit(
+    val res: IO[List[FileDiff]] =
+      lines(
         s"""
           |IGNORE THIS LINE
           |${deletedFile("Baz")}
@@ -40,10 +42,9 @@ class FileDiffSuite extends munit.CatsEffectSuite {
           |IGNORE THIS LINE
           |""".stripMargin
       )
-      .through(FileDiff.given_CmdDecoder_F_FileDiff[IO].decode)
-      .rethrow
-      .compile
-      .toList
+        .through(FileDiffParser[IO].parse)
+        .compile
+        .toList
 
     assertIO(
       obtained = res.map(_.size),
@@ -53,18 +54,16 @@ class FileDiffSuite extends munit.CatsEffectSuite {
 
   test("Parse diff with renamed files") {
 
-    val res: IO[List[FileDiff]] = fs2.Stream
-      .emit(
-        s"""
+    val res: IO[List[FileDiff]] = lines(
+      s"""
            |IGNORE THIS LINE
            |${renamedFile("test/Foo.txt", "test/Bar.txt")}
            |IGNORE THIS LINE
            |${renamedFile("test/Bar.txt", "test/A/Baz.txt")}
            |IGNORE THIS LINE
            |""".stripMargin
-      )
-      .through(FileDiff.given_CmdDecoder_F_FileDiff[IO].decode)
-      .rethrow
+    )
+      .through(FileDiffParser[IO].parse)
       .compile
       .toList
 
