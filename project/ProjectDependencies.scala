@@ -10,7 +10,7 @@ object ProjectDependencies {
   // test
   private val munitVersion       = "0.7.29"
   private val munitEffectVersion = "1.0.7"
-  private val scalacheck         = "1.17.1"
+  private val scalacheck         = "1.18.0"
 
   lazy val common: Seq[ModuleID] = Seq(
     // base
