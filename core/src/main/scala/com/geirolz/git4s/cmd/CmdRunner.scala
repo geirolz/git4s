@@ -10,9 +10,9 @@ import fs2.io.process.*
 import fs2.{text, Stream}
 
 trait CmdRunner[F[_]]:
-  def stream[E, T](pd: Cmd[F, E, T])(using WorkingCtx, CmdLogger[F]): Stream[F, T]
-  final inline def last[E, T](pd: Cmd[F, E, T])(using Async[F], WorkingCtx, CmdLogger[F]): F[T] =
-    stream(pd).compile.lastOrError
+  def stream[E, T](cmd: Cmd[F, E, T])(using WorkingCtx, CmdLogger[F]): Stream[F, T]
+  final inline def last[E, T](cmd: Cmd[F, E, T])(using Async[F], WorkingCtx, CmdLogger[F]): F[T] =
+    stream(cmd).compile.lastOrError
 
 private[git4s] object CmdRunner:
   transparent inline def apply[F[_]](using p: CmdRunner[F]): CmdRunner[F] = p
@@ -74,7 +74,7 @@ private[git4s] object CmdRunner:
       def applyWorkingDir(pb: ProcessBuilder): ProcessBuilder =
         currentWorkingDir.fold(pb.withCurrentWorkingDirectory)(pb.withWorkingDirectory)
 
-      applyWorkingDir(ProcessBuilder(cmd.command, cmd.args*))
+      applyWorkingDir(ProcessBuilder(cmd.cmdArg.value, cmd.args*))
         .spawn[F]
         .map(CmdProcess.fromProcess[F](_))
     })

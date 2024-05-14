@@ -3,6 +3,7 @@ package com.geirolz.git4s.cmd
 import cats.effect.kernel.Async
 import com.geirolz.git4s.codec.CmdDecoder
 import com.geirolz.git4s.data.*
+import com.geirolz.git4s.data.CmdArg.cmd
 import com.geirolz.git4s.data.diff.FileDiff
 import com.geirolz.git4s.data.failure.{GitCheckoutFailure, GitConfigFailure, GitFailure}
 import com.geirolz.git4s.data.request.GitConfigTarget
@@ -18,10 +19,10 @@ private[git4s] type GitCmd[F[_], E <: GitFailure, T] = Cmd[F, E, T]
 private[git4s] object GitCmd:
 
   def git[F[_]: Async, E <: GitFailure: CmdDecoder[F, *], T: CmdDecoder[F, *]](
-    arg1: String,
-    args: String*
+    arg1: Arg,
+    args: Arg*
   ): GitCmd[F, E, T] =
-    Cmd[F, E, T]("git", arg1 +: args*)
+    Cmd[F, E, T](cmd"git", arg1 +: args*)
 
   /** [[https://git-scm.com/docs/git-help]] */
   def help[F[_]: Async]: GitCmd[F, GitFailure, GitHelp] =
@@ -88,7 +89,7 @@ private[git4s] object GitCmd:
 
   /** [[https://git-scm.com/docs/git-commit]] */
   def commit[F[_]: Async](message: String): GitCmd[F, GitFailure, GitCommitResult] =
-    git("commit", s"-m $message")
+    git("commit", "-m $message")
 
   // ============================ Config ============================
   /** [[https://git-scm.com/docs/git-config]] */

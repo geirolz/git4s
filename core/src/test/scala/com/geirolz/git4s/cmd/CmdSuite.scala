@@ -2,12 +2,13 @@ package com.geirolz.git4s.cmd
 
 import cats.effect.IO
 import com.geirolz.git4s.cmd.Cmd
+import com.geirolz.git4s.data.CmdArg.cmd
 
 class CmdSuite extends munit.FunSuite {
 
   test("Cmd args syntax should be correct") {
     val args: List[String] = Cmd
-      .simple[IO]("echo", "hello")
+      .simple[IO](cmd"echo", "hello")
       .addOptArgs(
         Some("-a1"),
         Some("-a2"),

@@ -3,7 +3,8 @@ package com.geirolz.git4s
 import cats.effect.kernel.Async
 import cats.syntax.all.*
 import com.geirolz.git4s.cmd.{Cmd, CmdRunner, GitCmd, WorkingCtx}
-import com.geirolz.git4s.data.{GitVersion, OperativeSystem}
+import com.geirolz.git4s.data.CmdArg.cmd
+import com.geirolz.git4s.data.{CmdArg, GitVersion, OperativeSystem}
 import com.geirolz.git4s.log.CmdLogger
 
 trait GitInstaller[F[_]]:
@@ -37,22 +38,22 @@ object GitInstaller:
 
     import WorkingCtx.global.given
 
-    def installWith(app: String)(using CmdLogger[F]): F[Unit] =
+    def installWith(app: CmdArg)(using CmdLogger[F]): F[Unit] =
       Cmd.simple_(app, "install", "git").runGetLast
 
-    def uninstallWith(app: String)(using CmdLogger[F]): F[Unit] =
+    def uninstallWith(app: CmdArg)(using CmdLogger[F]): F[Unit] =
       Cmd.simple_(app, "uninstall", "git").runGetLast
 
     GitInstaller.instance[F](
       installF = {
-        case OperativeSystem.Linux   => installWith("apt-get")
-        case OperativeSystem.MacOS   => installWith("brew")
-        case OperativeSystem.Windows => installWith("choco")
+        case OperativeSystem.Linux   => installWith(cmd"apt-get")
+        case OperativeSystem.MacOS   => installWith(cmd"brew")
+        case OperativeSystem.Windows => installWith(cmd"choco")
       },
       uninstallF = {
-        case OperativeSystem.Linux   => uninstallWith("apt-get")
-        case OperativeSystem.MacOS   => uninstallWith("brew")
-        case OperativeSystem.Windows => uninstallWith("choco")
+        case OperativeSystem.Linux   => uninstallWith(cmd"apt-get")
+        case OperativeSystem.MacOS   => uninstallWith(cmd"brew")
+        case OperativeSystem.Windows => uninstallWith(cmd"choco")
       }
     )
   }

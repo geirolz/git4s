@@ -10,6 +10,7 @@ import cats.syntax.all.*
 import com.geirolz.git4s.data.diff.FileDiff
 import fs2.Stream
 
+
 // - tag
 // - rename branch
 trait Git4sRepository[F[_]]:
@@ -148,7 +149,7 @@ object Git4sRepository:
       allOrNone: Boolean      = false
     )(using CmdLogger[F]): Stream[F, FileDiff] =
 
-      val mayFilter: Option[String] =
+      val mayFilter: Option[Arg] =
         List(
           added       -> "A",
           copied      -> "C",
@@ -226,7 +227,7 @@ object Git4sRepository:
       GitCmd
         .commit[F](message)
         .addOptArgs(
-          fixup.map(f => s"--fixup=${f.tpe} ${f.commit}")
+          fixup.map(f => "--fixup=${f.tpe} ${f.commit}")
         )
         .runGetLast
 

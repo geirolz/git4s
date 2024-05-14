@@ -1,7 +1,7 @@
 package com.geirolz.git4s.data
 
 sealed trait GitResetMode:
-  def asArg: String = this match
+  def asArg: Arg = this match
     case GitResetMode.Soft  => "--soft"
     case GitResetMode.Mixed => "--mixed"
     case GitResetMode.Hard  => "--hard"
