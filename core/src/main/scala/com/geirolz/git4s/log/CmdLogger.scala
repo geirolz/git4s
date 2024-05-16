@@ -1,12 +1,15 @@
 package com.geirolz.git4s.log
 
 import cats.Applicative
-import cats.effect.kernel.Async
+import cats.effect.kernel.{Async, Clock, Resource}
 import cats.effect.std.Console
 import cats.syntax.all.*
-import com.geirolz.git4s.cmd.{currentWorkingDir, WorkingCtx}
+import com.geirolz.git4s.cmd.{WorkingCtx, currentWorkingDir}
 import com.geirolz.git4s.log.history.CmdHistoryLogger
-import fs2.Stream
+import fs2.io.file.{Files, Flags, Path}
+import fs2.{Chunk, Stream}
+
+import java.time.LocalDateTime
 
 trait CmdLogger[F[_]]:
 
@@ -43,36 +46,35 @@ object CmdLogger:
         .whenA(filter(exitCode))
         .as(Console[F].println(_).whenA(filter(exitCode)))
 
-//  def file[F[_]: Concurrent: Files: Clock](
-//    path: Path,
-//    filter: LogFilter = LogFilter.onlyFailures
-//  )(using formatter: LogFormatter): Resource[F, CmdLogger[F]] =
-//    Files[F]
-//      .writeCursor(path, Flags.Append)
-//      .map(c => {
-//        new CmdLogger[F]:
-//          def log(
-//            compiledCmd: String,
-//            in: Stream[F, String],
-//            exitCode: Int,
-//            result: String
-//          )(using WorkingCtx): F[Unit] =
-//            if (filter(exitCode))
-//              formatter
-//                .format[F](
-//                  compiledCmd = compiledCmd,
-//                  in          = in,
-//                  workingDir  = currentWorkingDir,
-//                  exitCode    = exitCode,
-//                  result      = result,
-//                  datetime    = Some(LocalDateTime.now),
-//                  verbose     = WorkingCtx.current.verboseLog
-//                )
-//                .map(s => Chunk.from(s.getBytes))
-//                .flatMap(c.write(_))
-//                .void
-//            else Monad[F].unit
-//      })
+  def file[F[_]: Async: Files: Clock](
+    path: Path,
+    filter: LogFilter = LogFilter.onlyFailures
+  )(using formatter: LogFormatter): Resource[F, CmdLogger[F]] =
+    Files[F]
+      .writeCursor(path, Flags.Append)
+      .map(c => {
+        new CmdLogger[F]:
+          def log(
+            compiledCmd: String,
+            in: Stream[F, String],
+            exitCode: Int
+          )(using WorkingCtx): F[String => F[Unit]] =
+            if (filter(exitCode))
+              formatter
+                .format[F](
+                  compiledCmd = compiledCmd,
+                  in          = in,
+                  workingDir  = currentWorkingDir,
+                  exitCode    = exitCode,
+                  datetime    = Some(LocalDateTime.now),
+                  verbose     = WorkingCtx.current.verboseLog
+                )
+                .map(s => Chunk.from(s.getBytes))
+                .flatMap(c.write(_))
+                .as(result => c.write(Chunk.from("\n".getBytes)).void)
+            else
+              Applicative[F].pure(_ => Applicative[F].unit)
+      })
 
   given noop[F[_]: Applicative]: CmdLogger[F] with
     def log(

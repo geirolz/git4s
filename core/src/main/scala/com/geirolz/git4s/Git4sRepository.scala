@@ -1,15 +1,14 @@
 package com.geirolz.git4s
 
 import cats.effect.kernel.Async
+import cats.syntax.all.*
 import com.geirolz.git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
 import com.geirolz.git4s.data.*
-import com.geirolz.git4s.data.request.FixupCommit
-import com.geirolz.git4s.data.value.{BranchName, CommitId, Remote}
-import com.geirolz.git4s.log.CmdLogger
-import cats.syntax.all.*
 import com.geirolz.git4s.data.diff.FileDiff
+import com.geirolz.git4s.data.request.FixupCommit
+import com.geirolz.git4s.data.value.{BranchName, Remote}
+import com.geirolz.git4s.log.CmdLogger
 import fs2.Stream
-
 
 // - tag
 // - rename branch
@@ -72,7 +71,8 @@ trait Git4sRepository[F[_]]:
     noFastForward: Boolean           = false,
     squash: Boolean                  = false,
     noCommit: Boolean                = false,
-    noVerify: Boolean                = false
+    noVerify: Boolean                = false,
+    autoStash: Boolean               = false
   )(using CmdLogger[F]): F[Unit]
 
   /** Add file contents to the index.
@@ -203,7 +203,8 @@ object Git4sRepository:
       noFastForward: Boolean           = false,
       squash: Boolean                  = false,
       noCommit: Boolean                = false,
-      noVerify: Boolean                = false
+      noVerify: Boolean                = false,
+      autoStash: Boolean               = false
     )(using CmdLogger[F]): F[Unit] =
       GitCmd
         .pull[F](remote, targetBranch)
@@ -213,7 +214,8 @@ object Git4sRepository:
           noFastForward   -> "--no-ff",
           squash          -> "--squash",
           noCommit        -> "--no-commit",
-          noVerify        -> "--no-verify"
+          noVerify        -> "--no-verify",
+          autoStash       -> "--autostash"
         )
         .runGetLast
 

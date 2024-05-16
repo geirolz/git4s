@@ -73,6 +73,28 @@ class FileDiffParserSuite extends munit.CatsEffectSuite {
     )
   }
 
+  test("Parse diff with changed files") {
+
+    val res: IO[List[FileDiff]] = lines(
+      s"""
+         |IGNORE THIS LINE
+         |${renamedFile("test/Foo.txt", "test/Bar.txt")}
+         |IGNORE THIS LINE
+         |${renamedFile("test/Bar.txt", "test/A/Baz.txt")}
+         |IGNORE THIS LINE
+         |""".stripMargin
+    )
+      .through(FileDiffParser[IO].parse)
+      .compile
+      .toList
+
+    assertIO(
+      obtained = res.map(_.size),
+      returns = 2
+    )
+  }
+
+
   def newFile(name: String): String =
     s"""
       |diff --git a/$name.scala b/$name.scala
