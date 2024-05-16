@@ -2,7 +2,8 @@ package com.geirolz.git4s.codec
 
 import cats.effect.kernel.Async
 import com.geirolz.git4s.codec.CmdDecoder.instance
-import fs2.{Pipe, Stream}
+import com.geirolz.git4s.data.GitCommitLog
+import fs2.{Pipe, Pull, Pure, Stream}
 
 trait CmdDecoder[F[_], T]:
   def decode: Pipe[F, String, CmdDecoder.Result[T]]
@@ -15,6 +16,11 @@ object CmdDecoder extends ProcessDecoderInstances:
 
   inline def apply[F[_], T](using d: CmdDecoder[F, T]): CmdDecoder[F, T] = d
 
+  def failedAsPull[F[_], T](failure: DecodingFailure): Pull[F, CmdDecoder.Result[T], Option[Stream[F, Nothing]]] =
+    Pull
+      .output1[F, CmdDecoder.Result[T]](Left(failure))
+      .as(None)
+    
   inline def success[F[_]: Async, T](t: T): CmdDecoder[F, T] =
     const(Right(t))
 

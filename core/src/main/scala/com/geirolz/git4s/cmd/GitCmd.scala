@@ -59,6 +59,9 @@ private[git4s] object GitCmd:
   def branch[F[_]: Async]: Cmd[F, GitFailure, String] =
     git("branch")
 
+  def log[F[_]: Async]: Cmd[F, GitFailure, GitCommitLog] =
+    git("log")
+
   /** [[https://git-scm.com/docs/git-fetch]] */
   def checkout[F[_]: Async]: Cmd[F, GitCheckoutFailure, String] =
     git("checkout")

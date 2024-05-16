@@ -102,6 +102,12 @@ trait Git4sRepository[F[_]]:
     dontUseStdIgnoreRules: Boolean = false
   )(using CmdLogger[F]): F[Unit]
 
+  /** Show commit logs.
+    *
+    * [[https://git-scm.com/docs/git-log]]
+    */
+  def log: fs2.Stream[F, GitCommitLog]
+
   // ==================== BRANCH AGNOSTIC ====================
   /** Select the branch with the specified name */
   def checkout(branchName: BranchName, createIfNotExists: Boolean = true): F[Unit]
@@ -167,7 +173,7 @@ object Git4sRepository:
           .filterNot(_.isEmpty)
           .map(v => s"--diff-filter=$v")
 
-      GitCmd.diff[F].addOptArgs(mayFilter, pattern).runAsStream
+      GitCmd.diff[F].addOptArgs(mayFilter, pattern).stream
 
     override def currentBranch(using CmdLogger[F]): F[BranchName] =
       GitCmd.revParse[F].addArgs("--abbrev-ref", "HEAD").runGetLast
@@ -246,6 +252,9 @@ object Git4sRepository:
           dontUseStdIgnoreRules -> "-x"
         )
         .run_
+
+    override def log: Stream[F, GitCommitLog] =
+      GitCmd.log[F].stream
 
     override def checkout(
       branchName: BranchName,

@@ -40,7 +40,7 @@ private[git4s] final case class Cmd[F[_]: Async, E, T](
   override def toString: String = compiled
 
   // ---------------- Runners ----------------
-  def runAsStream(using WorkingCtx, CmdRunner[F], CmdLogger[F]): Stream[F, T] =
+  def stream(using WorkingCtx, CmdRunner[F], CmdLogger[F]): Stream[F, T] =
     CmdRunner[F].stream(this)
 
   def runGetLast(using WorkingCtx, CmdRunner[F], CmdLogger[F]): F[T] =
