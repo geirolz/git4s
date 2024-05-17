@@ -34,10 +34,9 @@ object FileDiff extends FileDiffInstances:
   ) extends FileDiff(Some(sourceFile), None, LazyList((content, CodeBlock.empty)))
 
   case class ModifiedFile(
-    sourceFile: Path,
-    newFile: Path,
+    file: Path,
     changes: LazyList[(CodeBlock, CodeBlock)]
-  ) extends FileDiff(Some(sourceFile), Some(newFile), changes):
+  ) extends FileDiff(Some(file), Some(file), changes):
 
     def addChanges(changes: (CodeBlock, CodeBlock)): ModifiedFile =
       this.copy(changes = changes #:: this.changes)

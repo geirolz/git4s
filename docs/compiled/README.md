@@ -31,7 +31,7 @@ libraryDependencies += "com.github.geirolz" %% "git4s" % "<version>"
 - [x] git config [local | global]
 
 **tag**
-- [ ] git tag
+- [x] git tag [list | create | delete | replace]
 
 **repository**
 - [x] git status

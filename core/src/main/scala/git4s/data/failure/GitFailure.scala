@@ -9,7 +9,7 @@ import git4s.codec.CmdDecoder
 trait GitFailure extends CmdFailure:
   override def toString: String =
     this match
-      case GitGenericFailure(message) => s"$message"
+      case GitGenericFailure(message) => message
       case NotInAGitRepository        => "NotAGitRepositoryOrParentDir"
 
 object GitFailure:

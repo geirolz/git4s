@@ -8,10 +8,12 @@ import git4s.data.diff.{CodeBlock, FileDiff}
 
 import scala.util.control.NoStackTrace
 
-trait FileDiffParser[F[_]]:
+// TODO WIP
+private[git4s] trait FileDiffParser[F[_]]:
   def parse: Pipe[F, String, FileDiff]
 
-object FileDiffParser:
+// TODO WIP
+private[git4s] object FileDiffParser:
 
   // errors
   sealed trait ParsingDiffFailure extends NoStackTrace:
@@ -24,8 +26,8 @@ object FileDiffParser:
   // changes types
   private sealed trait ChangeType(val symbol: String)
   private object ChangeType:
-    case object NewLine extends ChangeType("+")
-    case object DeletedLine extends ChangeType("-")
+    case object NewLines extends ChangeType("+")
+    case object DeletedLines extends ChangeType("-")
 
   def apply[F[_]](using p: FileDiffParser[F]): FileDiffParser[F] = p
 
@@ -51,12 +53,12 @@ object FileDiffParser:
         stream: fs2.Stream[F, String]
       ): Pull[F, Nothing, (NewFile | DeletedFile, fs2.Stream[F, String])] =
 
-        val isNewFile: Boolean = tpe == ChangeType.NewLine
+        val isNewFile: Boolean = tpe == ChangeType.NewLines
         val f: (Path, CodeBlock) => NewFile | DeletedFile = tpe match
-          case ChangeType.NewLine     => NewFile(_, _)
-          case ChangeType.DeletedLine => DeletedFile(_, _)
+          case ChangeType.NewLines     => NewFile(_, _)
+          case ChangeType.DeletedLines => DeletedFile(_, _)
 
-        stream.drop(1).pull.unconsN(3).flatMap {
+        stream.pull.unconsN(3).flatMap {
           case Some(chunk, rms2: fs2.Stream[F, String]) =>
             chunk.toList match {
               case s"$idA $_/$pathA" :: s"$idB $_/$pathB" :: s"@@ -$scol,$sline +$ecol,$eline @@" :: Nil =>
@@ -82,7 +84,7 @@ object FileDiffParser:
             Pull.raiseError(PrematureEOS)
         }
 
-      // ------------------ NEW OR DELETED FILE ------------------
+      // ------------------ MOVED OR RENAMED FILE ------------------
       def goMovedOrRenamedFile(
         from: String,
         stream: fs2.Stream[F, String]
@@ -99,17 +101,20 @@ object FileDiffParser:
       def go(s: fs2.Stream[F, String]): Pull[F, FileDiff, Unit] =
         s.pull.uncons1.flatMap {
           case Some(s"new file mode $_", rms: fs2.Stream[F, String]) =>
-            goNewOrDeletedFile(ChangeType.NewLine)(rms).flatMap { case (newFile, rms2) =>
-              Pull.output1(newFile) >> go(rms2)
-            }
+            goNewOrDeletedFile(ChangeType.NewLines)(rms.drop(1))
+              .flatMap { case (newFile, rms2) => Pull.output1(newFile) >> go(rms2) }
 
           case Some(s"deleted file mode $_", rms: fs2.Stream[F, String]) =>
-            goNewOrDeletedFile(ChangeType.DeletedLine)(rms)
+            goNewOrDeletedFile(ChangeType.DeletedLines)(rms.drop(1))
               .flatMap { case (newFile, rms2) => Pull.output1(newFile) >> go(rms2) }
 
           case Some(s"rename from $from", rms: fs2.Stream[F, String]) =>
             goMovedOrRenamedFile(from, rms)
               .flatMap { case (renamedFile, rms2) => Pull.output1(renamedFile) >> go(rms2) }
+
+//          case Some(s"index $_", rms: fs2.Stream[F, String]) =>
+//            goNewOrDeletedFile(ChangeType.DeletedLine)(rms)
+//              .flatMap { case (newFile, rms2) => Pull.output1(newFile) >> go(rms2) }
 
           // skip line
           case Some(_, rms) =>

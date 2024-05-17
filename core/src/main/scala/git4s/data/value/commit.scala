@@ -1,24 +1,13 @@
 package git4s.data.value
 
 opaque type CommitId = String
-object CommitId:
-  def apply(value: String): CommitId         = value
-  extension (id: CommitId) def value: String = id
+object CommitId extends NewType[String, CommitId]
 
 opaque type CommitAuthor = String
-object CommitAuthor:
-  def apply(value: String): CommitAuthor         = value
-  extension (id: CommitAuthor) def value: String = id
+object CommitAuthor extends NewType[String, CommitAuthor]
 
 opaque type CommitDate = String
-object CommitDate:
-  def apply(value: String): CommitDate         = value
-  extension (id: CommitDate) def value: String = id
+object CommitDate extends NewType[String, CommitDate]
 
 opaque type CommitMessage = String
-object CommitMessage:
-  def apply(value: String): CommitMessage         = value
-  extension (id: CommitMessage) def value: String = id
-
-  
-  
+object CommitMessage extends NewType[String, CommitMessage]
