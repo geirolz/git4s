@@ -59,9 +59,9 @@ for debugging purpose.
 Example:
 ```scala
 import cats.effect.IO
- import com.geirolz.git4s.Git4s
- import com.geirolz.git4s.data.GitVersion
- import com.geirolz.git4s.log.*
+ import git4s.Git4s
+ import git4s.data.GitVersion
+ import git4s.log.*
 
  given logger: CmdLogger[IO] = CmdLogger.console[IO](LogFilter.all)
  val result: IO[GitVersion] = Git4s[IO].version

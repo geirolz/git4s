@@ -1,6 +1,6 @@
 import cats.effect.kernel.Async
-import com.geirolz.git4s.cmd.error.CmdFailure
 import fs2.Stream
+import git4s.cmd.error.CmdFailure
 
 for {
   _ <- Async[F].unit
