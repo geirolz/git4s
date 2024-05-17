@@ -5,6 +5,11 @@ object CommitId:
   def apply(value: String): CommitId         = value
   extension (id: CommitId) def value: String = id
 
+opaque type CommitAuthor = String
+object CommitAuthor:
+  def apply(value: String): CommitAuthor         = value
+  extension (id: CommitAuthor) def value: String = id
+
 opaque type CommitDate = String
 object CommitDate:
   def apply(value: String): CommitDate         = value

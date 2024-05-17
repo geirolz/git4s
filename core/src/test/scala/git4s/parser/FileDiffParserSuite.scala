@@ -3,22 +3,20 @@ package git4s.parser
 import cats.effect.IO
 import git4s.data.diff.FileDiff
 import git4s.data.parser.FileDiffParser
+import git4s.testing.*
 
 class FileDiffParserSuite extends munit.CatsEffectSuite {
-
-  private def lines(s: String): fs2.Stream[IO, String] =
-    fs2.Stream.emits(s.split("\n").toSeq)
 
   test("Parse diff with new files") {
 
     val res: IO[List[FileDiff]] =
       lines(
         s"""
-           |IGNORE THIS LINE
+           |$aDummyLine
            |${newFile("Baz")}
-           |IGNORE THIS LINE
+           |$aDummyLine
            |${newFile("Bar")}
-           |IGNORE THIS LINE
+           |$aDummyLine
            |""".stripMargin
       )
         .through(FileDiffParser[IO].parse)
@@ -36,11 +34,11 @@ class FileDiffParserSuite extends munit.CatsEffectSuite {
     val res: IO[List[FileDiff]] =
       lines(
         s"""
-          |IGNORE THIS LINE
+          |$aDummyLine
           |${deletedFile("Baz")}
-          |IGNORE THIS LINE
+          |$aDummyLine
           |${deletedFile("Bar")}
-          |IGNORE THIS LINE
+          |$aDummyLine
           |""".stripMargin
       )
         .through(FileDiffParser[IO].parse)
@@ -57,11 +55,11 @@ class FileDiffParserSuite extends munit.CatsEffectSuite {
 
     val res: IO[List[FileDiff]] = lines(
       s"""
-           |IGNORE THIS LINE
+           |$aDummyLine
            |${renamedFile("test/Foo.txt", "test/Bar.txt")}
-           |IGNORE THIS LINE
+           |$aDummyLine
            |${renamedFile("test/Bar.txt", "test/A/Baz.txt")}
-           |IGNORE THIS LINE
+           |$aDummyLine
            |""".stripMargin
     )
       .through(FileDiffParser[IO].parse)
@@ -78,9 +76,9 @@ class FileDiffParserSuite extends munit.CatsEffectSuite {
 
     val res: IO[List[FileDiff]] = lines(
       s"""
-         |IGNORE THIS LINE
+         |$aDummyLine
          |${renamedFile("test/Foo.txt", "test/Bar.txt")}
-         |IGNORE THIS LINE
+         |$aDummyLine
          |${renamedFile("test/Bar.txt", "test/A/Baz.txt")}
          |IGNORE THIS LINE
          |""".stripMargin
@@ -91,10 +89,9 @@ class FileDiffParserSuite extends munit.CatsEffectSuite {
 
     assertIO(
       obtained = res.map(_.size),
-      returns = 2
+      returns  = 2
     )
   }
-
 
   def newFile(name: String): String =
     s"""
