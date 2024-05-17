@@ -1,15 +1,14 @@
 package git4s.cmd
 
 import cats.effect.kernel.Async
-import git4s.data.*
-import git4s.data.value.CmdArg.cmd
 import fs2.io.file.Path
 import git4s.codec.CmdDecoder
+import git4s.data.*
 import git4s.data.diff.FileDiff
-import git4s.data.{GitAddResult, GitCloneResult, GitCommitLog, GitCommitResult, GitHelp, GitInitResult, GitStatus, GitVersion}
 import git4s.data.failure.{GitCheckoutFailure, GitConfigFailure, GitFailure}
 import git4s.data.request.GitConfigTarget
-import git4s.data.value.{Arg, BranchName, Remote}
+import git4s.data.value.CmdArg.cmd
+import git4s.data.value.{Arg, BranchName, CommitTag, Remote}
 
 /** Git commands collection. This object contains all the git commands available in a minimal shape. Each command is
   * represented by a method that returns a [[Cmd]] instance.
@@ -60,6 +59,7 @@ private[git4s] object GitCmd:
   def branch[F[_]: Async]: Cmd[F, GitFailure, String] =
     git("branch")
 
+  /** [[https://git-scm.com/docs/git-log]] */
   def log[F[_]: Async]: Cmd[F, GitFailure, GitCommitLog] =
     git("log")
 
@@ -113,3 +113,14 @@ private[git4s] object GitCmd:
   /** [[https://git-scm.com/docs/git-config]] */
   def unsetConfig[F[_]: Async](target: GitConfigTarget)(key: String): GitCmd[F, GitConfigFailure, Unit] =
     config.addArgs(target.asArg, "--unset", key)
+
+  /** [[https://git-scm.com/docs/git-tag]] */
+  def tag[F[_]: Async]: GitCmd[F, GitConfigFailure, Unit] =
+    git("tag")
+
+  /** [[https://git-scm.com/docs/git-tag]] */
+  def listTag[F[_]: Async](pattern: Option[String] = None): GitCmd[F, GitConfigFailure, CommitTag] =
+    tag
+      .addArgs("--list")
+      .addOptArgs(pattern)
+      .as[CommitTag]

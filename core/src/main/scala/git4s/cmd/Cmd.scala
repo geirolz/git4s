@@ -18,6 +18,12 @@ private[git4s] final case class Cmd[F[_]: Async, E, T](
   in: Stream[F, String] = Stream.empty
 ):
 
+  def as[TT](using d: CmdDecoder[F, TT]): Cmd[F, E, TT] =
+    copy(decoder = d)
+
+  def asError[EE](using d: CmdDecoder[F, EE]): Cmd[F, EE, T] =
+    copy(errorDecoder = d)
+
   inline def setArgs(args: Arg*): Cmd[F, E, T] =
     copy(args = args.toList)
 

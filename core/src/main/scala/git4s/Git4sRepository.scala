@@ -2,13 +2,12 @@ package git4s
 
 import cats.effect.kernel.Async
 import cats.syntax.all.*
-import git4s.data.*
 import fs2.Stream
 import git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
-import git4s.data.{GitAddResult, GitCommitLog, GitCommitResult, GitInitResult, GitStatus}
 import git4s.data.diff.FileDiff
 import git4s.data.request.FixupCommit
 import git4s.data.value.{Arg, BranchName, Remote}
+import git4s.data.*
 import git4s.log.CmdLogger
 
 // - tag
@@ -36,6 +35,9 @@ trait Git4sRepository[F[_]]:
 
   /** Return a Git4sReset type to perform resets */
   def reset: Git4sReset[F]
+
+  /** Return a Git4sTag type to perform tag operations */
+  def tag: Git4sTag[F]
 
   /** Show the current branch.
     *
@@ -141,6 +143,7 @@ object Git4sRepository:
   def apply[F[_]: Async](using WorkingCtx, CmdRunner[F]): Git4sRepository[F] = new Git4sRepository[F]:
 
     override lazy val reset: Git4sReset[F] = Git4sReset[F]
+    override lazy val tag: Git4sTag[F]     = Git4sTag[F]
 
     override def diff(
       pattern: Option[String] = None,

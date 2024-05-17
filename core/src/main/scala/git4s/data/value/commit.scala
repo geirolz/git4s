@@ -19,3 +19,6 @@ opaque type CommitMessage = String
 object CommitMessage:
   def apply(value: String): CommitMessage         = value
   extension (id: CommitMessage) def value: String = id
+
+  
+  
