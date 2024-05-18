@@ -1,6 +1,5 @@
 package git4s.data.value
 
-
 trait NewType[V, T](using env1: V =:= T, env2: T =:= V):
   type Boxed   = T
   type Unboxed = V

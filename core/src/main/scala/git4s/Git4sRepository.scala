@@ -19,7 +19,7 @@ trait Git4sRepository[F[_]]:
     *
     * [[https://git-scm.com/docs/git-diff]]
     */
-  //TODO WIP
+  // TODO WIP
   private[git4s] def diff(
     pattern: Option[String] = None,
     added: Boolean          = true,
@@ -146,7 +146,7 @@ object Git4sRepository:
     override lazy val reset: Git4sReset[F] = Git4sReset[F]
     override lazy val tag: Git4sTag[F]     = Git4sTag[F]
 
-    //TODO WIP
+    // TODO WIP
     override private[git4s] def diff(
       pattern: Option[String] = None,
       added: Boolean          = true,

@@ -5,7 +5,7 @@ import cats.effect.std.Queue
 import cats.syntax.all.*
 import fs2.io.file.Path
 import fs2.io.process.*
-import fs2.{Stream, text}
+import fs2.{text, Stream}
 import git4s.cmd.error.CmdFailure
 import git4s.log.CmdLogger
 

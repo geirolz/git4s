@@ -6,7 +6,7 @@ import cats.effect.std.Console
 import cats.syntax.all.*
 import fs2.io.file.{Files, Flags, Path}
 import fs2.{Chunk, Stream}
-import git4s.cmd.{WorkingCtx, currentWorkingDir}
+import git4s.cmd.{currentWorkingDir, WorkingCtx}
 import git4s.log.history.CmdHistoryLogger
 
 import java.time.LocalDateTime

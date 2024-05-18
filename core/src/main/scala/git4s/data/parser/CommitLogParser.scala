@@ -8,7 +8,7 @@ import git4s.utils.*
 
 trait CommitLogParser[F[_]]:
   def parse: Pipe[F, String, GitCommitLog]
-  
+
 object CommitLogParser:
   def apply[F[_]](using p: CommitLogParser[F]): CommitLogParser[F] = p
 

@@ -13,7 +13,7 @@ case class CodeBlock(
 
   def addChangeLine(line: String): CodeBlock =
     addLines(Chunk(line))
-  
+
   def addLines(lines: Chunk[String]): CodeBlock =
     copy(lines = this.lines ++ lines)
 
@@ -22,10 +22,10 @@ case class CodeBlock(
        |${lines.toList.mkString("\n")}""".stripMargin
 
 object CodeBlock:
-  
-  def withoutInfo(lines: Chunk[String]): CodeBlock = 
+
+  def withoutInfo(lines: Chunk[String]): CodeBlock =
     CodeBlock(0, 0, 0, 0, lines)
-    
+
   val empty: CodeBlock = CodeBlock.withoutInfo(Chunk.empty)
 
   given Show[CodeBlock] = Show.fromToString
