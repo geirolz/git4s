@@ -63,6 +63,10 @@ private[git4s] object GitCmd:
   def log[F[_]: Async]: Cmd[F, GitFailure, GitCommitLog] =
     git("log")
 
+  /** [[https://git-scm.com/docs/git-shortlog]] */
+  def shortLog[F[_] : Async]: Cmd[F, GitFailure, GitCommitShortLog] =
+    git("shortlog")
+  
   /** [[https://git-scm.com/docs/git-fetch]] */
   def checkout[F[_]: Async]: Cmd[F, GitCheckoutFailure, String] =
     git("checkout")

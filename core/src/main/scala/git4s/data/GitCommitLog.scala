@@ -8,14 +8,14 @@ import git4s.codec.DecodingFailure.ParsingFailure
 import git4s.codec.{CmdDecoder, DecodingFailure}
 import git4s.data.diff.FileDiff
 import git4s.data.parser.{CommitLogParser, FileDiffParser}
-import git4s.data.value.{CommitAuthor, CommitDate, CommitId, CommitMessage}
+import git4s.data.value.{CommitAuthorId, CommitDate, CommitId, CommitMessage}
 
 case class GitCommitLog(
-  commitId: CommitId,
-  merge: Option[(CommitId, CommitId)],
-  author: CommitAuthor,
-  date: CommitDate,
-  message: CommitMessage
+                         commitId: CommitId,
+                         merge: Option[(CommitId, CommitId)],
+                         author: CommitAuthorId,
+                         date: CommitDate,
+                         message: CommitMessage
 )
 object GitCommitLog:
 

@@ -1,6 +1,6 @@
 package git4s.testing
 
-import git4s.data.value.{CommitAuthor, CommitDate, CommitId, CommitMessage}
+import git4s.data.value.{CommitAuthorId, CommitDate, CommitId, CommitMessage}
 
 import java.util.UUID
 import scala.util.Random
@@ -13,7 +13,7 @@ def anEmptyLine: String = " "
 def aCommitId: CommitId =
   CommitId(UUID.randomUUID().toString)
 
-def aCommitAuthor: CommitAuthor =
+def aCommitAuthor: CommitAuthorId =
   val id: Int = Random.nextInt()
   CommitAuthor(s"author#$id <author.$id@git.com>")
 

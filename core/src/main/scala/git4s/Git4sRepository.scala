@@ -6,11 +6,10 @@ import fs2.Stream
 import git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
 import git4s.data.diff.FileDiff
 import git4s.data.request.FixupCommit
-import git4s.data.value.{Arg, BranchName, Remote}
+import git4s.data.value.{Arg, BranchName, CommitId, CommitTag, Remote}
 import git4s.data.*
 import git4s.log.CmdLogger
 
-// - tag
 // - rename branch
 trait Git4sRepository[F[_]]:
 
@@ -111,6 +110,17 @@ trait Git4sRepository[F[_]]:
     * [[https://git-scm.com/docs/git-log]]
     */
   def log: fs2.Stream[F, GitCommitLog]
+
+  /** Summarize git log output
+    *
+    * [[https://git-scm.com/docs/git-shortlog]]
+    */
+  def shortLog(
+    revisionRange: Option[(CommitTag, CommitTag)] = None,
+    email: Boolean                                = true,
+    sort: Boolean                                 = false,
+    excludeMerges: Boolean                        = false
+  ): Stream[F, GitCommitShortLog]
 
   // ==================== BRANCH AGNOSTIC ====================
   /** Select the branch with the specified name */
@@ -259,8 +269,27 @@ object Git4sRepository:
         )
         .run_
 
+    // log
     override def log: Stream[F, GitCommitLog] =
       GitCmd.log[F].stream
+
+    override def shortLog(
+      revisionRange: Option[(CommitTag, CommitTag)] = None,
+      email: Boolean                                = true,
+      sort: Boolean                                 = false,
+      excludeMerges: Boolean                        = false
+    ): Stream[F, GitCommitShortLog] =
+      GitCmd
+        .shortLog[F]
+        .addOptArgs(
+          revisionRange.map { case (from, to) => s"$from..$to" }
+        )
+        .addFlagArgs(
+          email         -> "--email",
+          sort          -> "--numbered",
+          excludeMerges -> "--no-merges"
+        )
+        .stream
 
     override def checkout(
       branchName: BranchName,

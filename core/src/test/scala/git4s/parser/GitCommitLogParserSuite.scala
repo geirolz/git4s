@@ -3,7 +3,7 @@ package git4s.parser
 import cats.effect.IO
 import git4s.data.GitCommitLog
 import git4s.data.parser.CommitLogParser
-import git4s.data.value.{CommitAuthor, CommitDate, CommitId, CommitMessage}
+import git4s.data.value.{CommitAuthorId, CommitDate, CommitId, CommitMessage}
 import git4s.testing.*
 
 class GitCommitLogParserSuite extends munit.CatsEffectSuite {
@@ -39,10 +39,10 @@ class GitCommitLogParserSuite extends munit.CatsEffectSuite {
   }
 
   def aSimpleCommitLog(
-    id: CommitId         = aCommitId,
-    author: CommitAuthor = aCommitAuthor,
-    date: CommitDate     = aCommitDate,
-    msg: CommitMessage   = aCommitMessage
+                        id: CommitId         = aCommitId,
+                        author: CommitAuthorId = aCommitAuthor,
+                        date: CommitDate     = aCommitDate,
+                        msg: CommitMessage   = aCommitMessage
   ): String =
     s"""commit ${id.value}
        |Author: ${author.value}
@@ -53,11 +53,11 @@ class GitCommitLogParserSuite extends munit.CatsEffectSuite {
        |""".stripMargin
 
   def aMergeCommitLog(
-    id: CommitId                = aCommitId,
-    merge: (CommitId, CommitId) = (aCommitId, aCommitId),
-    author: CommitAuthor        = aCommitAuthor,
-    date: CommitDate            = aCommitDate,
-    msg: CommitMessage          = aCommitMessage
+                       id: CommitId                = aCommitId,
+                       merge: (CommitId, CommitId) = (aCommitId, aCommitId),
+                       author: CommitAuthorId        = aCommitAuthor,
+                       date: CommitDate            = aCommitDate,
+                       msg: CommitMessage          = aCommitMessage
   ): String =
     s"""commit ${id.value}
        |Merge: ${merge._1.value} ${merge._2.value}

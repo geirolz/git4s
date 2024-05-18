@@ -3,7 +3,7 @@ package git4s.data.parser
 import cats.effect.Async
 import fs2.{Pipe, Pull}
 import git4s.data.GitCommitLog
-import git4s.data.value.{CommitAuthor, CommitDate, CommitId, CommitMessage}
+import git4s.data.value.{CommitAuthorId, CommitDate, CommitId, CommitMessage}
 import git4s.utils.*
 
 trait CommitLogParser[F[_]]:
