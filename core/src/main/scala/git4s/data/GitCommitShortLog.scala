@@ -3,15 +3,15 @@ package git4s.data
 import cats.effect.kernel.Async
 import git4s.codec.CmdDecoder
 import git4s.data.parser.{CommitLogParser, CommitShortLogParser}
-import git4s.data.value.{CommitAuthorEmail, CommitAuthorId, CommitMessage}
+import git4s.data.value.{CommitAuthorEmail, CommitAuthor, CommitMessage}
 import cats.syntax.all.*
 import git4s.codec.DecodingFailure.ParsingFailure
 
 case class GitCommitShortLog(
-  author: CommitAuthorId,
-  authorEmail: Option[CommitAuthorEmail],
-  numberOfCommits: Int,
-  commitMessages: List[CommitMessage]
+                              author: CommitAuthor,
+                              authorEmail: Option[CommitAuthorEmail],
+                              numberOfCommits: Int,
+                              commitMessages: List[CommitMessage]
 )
 object GitCommitShortLog:
 
