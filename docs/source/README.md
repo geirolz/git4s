@@ -1,7 +1,7 @@
 # Git4s
 
 [![Build Status](https://github.com/geirolz/git4s/actions/workflows/cicd.yml/badge.svg)](https://github.com/geirolz/git4s/actions)
-[![codecov](https://img.shields.io/codecov/c/github/geirolz/git4s)](https://codecov.io/gh/geirolz/git4s)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/0c050a5f75354469b166cd0717bb1072)](https://app.codacy.com/gh/geirolz/git4s/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/0c050a5f75354469b166cd0717bb1072)](https://app.codacy.com/gh/geirolz/git4s/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Sonatype Nexus (Releases)](https://img.shields.io/nexus/r/com.github.geirolz/git4s_3?server=https%3A%2F%2Foss.sonatype.org)](https://mvnrepository.com/artifact/com.github.geirolz/git4s)
 [![Scala Steward badge](https://img.shields.io/badge/Scala_Steward-helping-blue.svg?style=flat&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQCAMAAAARSr4IAAAAVFBMVEUAAACHjojlOy5NWlrKzcYRKjGFjIbp293YycuLa3pYY2LSqql4f3pCUFTgSjNodYRmcXUsPD/NTTbjRS+2jomhgnzNc223cGvZS0HaSD0XLjbaSjElhIr+AAAAAXRSTlMAQObYZgAAAHlJREFUCNdNyosOwyAIhWHAQS1Vt7a77/3fcxxdmv0xwmckutAR1nkm4ggbyEcg/wWmlGLDAA3oL50xi6fk5ffZ3E2E3QfZDCcCN2YtbEWZt+Drc6u6rlqv7Uk0LdKqqr5rk2UCRXOk0vmQKGfc94nOJyQjouF9H/wCc9gECEYfONoAAAAASUVORK5CYII=)](https://scala-steward.org)
