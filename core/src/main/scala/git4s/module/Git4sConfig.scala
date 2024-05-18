@@ -1,4 +1,4 @@
-package git4s
+package git4s.module
 
 import cats.effect.kernel.Async
 import cats.syntax.all.*
@@ -7,7 +7,7 @@ import git4s.data.request.GitConfigTarget
 import git4s.data.request.GitConfigTarget.{Global, Local}
 import git4s.log.CmdLogger
 
-trait Git4sConfig[F[_]](target: GitConfigTarget)(using WorkingCtx):
+sealed trait Git4sConfig[F[_]](target: GitConfigTarget)(using WorkingCtx):
 
   /** Get the value of a key in the config */
   def get(key: String)(using CmdLogger[F]): F[Option[String]]
@@ -18,11 +18,16 @@ trait Git4sConfig[F[_]](target: GitConfigTarget)(using WorkingCtx):
   /** Unset the value of a key in the config */
   def unset(key: String)(using CmdLogger[F]): F[Unit]
 
-object Git4sConfig:
+private[git4s] object Git4sConfig:
 
+  trait Module[F[_]]:
+    def reset: Git4sConfig[F]
+
+  /** Access the default implementation directly from `Git4s[F].localConfig` */
   def local[F[_]: Async: CmdRunner](using WorkingCtx): Git4sConfig[F] =
     apply(Local)
 
+  /** Access the default implementation directly from `Git4s[F].globalConfig` */
   def global[F[_]: Async: CmdRunner](using WorkingCtx): Git4sConfig[F] =
     apply(Global)
 

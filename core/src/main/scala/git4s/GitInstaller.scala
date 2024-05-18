@@ -29,6 +29,7 @@ trait GitInstaller[F[_]]:
   /** Get the installed git version */
   def version(using CmdLogger[F]): F[GitVersion]
 
+/** Access the default implementation directly from `Git4s[F]` or create it with a custom instance */
 object GitInstaller:
 
   /** Create a new instance of GitInstaller using the default package manager for the current operative system

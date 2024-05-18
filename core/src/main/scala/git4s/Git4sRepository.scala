@@ -4,14 +4,15 @@ import cats.effect.kernel.Async
 import cats.syntax.all.*
 import fs2.Stream
 import git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
+import git4s.data.*
 import git4s.data.diff.FileDiff
 import git4s.data.request.FixupCommit
-import git4s.data.value.{Arg, BranchName, CommitId, CommitTag, Remote}
-import git4s.data.*
+import git4s.data.value.{Arg, BranchName, CommitTag, Remote}
 import git4s.log.CmdLogger
+import git4s.module.{Git4sLog, Git4sReset, Git4sTag}
 
 // - rename branch
-trait Git4sRepository[F[_]]:
+trait Git4sRepository[F[_]] extends Git4sLog.Module[F], Git4sReset.Module[F], Git4sTag.Module[F]:
 
   // ==================== BRANCH BASED ====================
   /** Show changes between commits, commit and working tree, etc
@@ -32,12 +33,6 @@ trait Git4sRepository[F[_]]:
     broken: Boolean         = true,
     allOrNone: Boolean      = true
   )(using CmdLogger[F]): Stream[F, FileDiff]
-
-  /** Return a Git4sReset type to perform resets */
-  def reset: Git4sReset[F]
-
-  /** Return a Git4sTag type to perform tag operations */
-  def tag: Git4sTag[F]
 
   /** Show the current branch.
     *
@@ -105,23 +100,6 @@ trait Git4sRepository[F[_]]:
     dontUseStdIgnoreRules: Boolean = false
   )(using CmdLogger[F]): F[Unit]
 
-  /** Show commit logs.
-    *
-    * [[https://git-scm.com/docs/git-log]]
-    */
-  def log: fs2.Stream[F, GitCommitLog]
-
-  /** Summarize git log output
-    *
-    * [[https://git-scm.com/docs/git-shortlog]]
-    */
-  def shortLog(
-    revisionRange: Option[(CommitTag, CommitTag)] = None,
-    email: Boolean                                = true,
-    sort: Boolean                                 = false,
-    excludeMerges: Boolean                        = false
-  ): Stream[F, GitCommitShortLog]
-
   // ==================== BRANCH AGNOSTIC ====================
   /** Select the branch with the specified name */
   def checkout(branchName: BranchName, createIfNotExists: Boolean = true): F[Unit]
@@ -150,9 +128,12 @@ trait Git4sRepository[F[_]]:
     */
   def init(using CmdLogger[F]): F[GitInitResult]
 
-object Git4sRepository:
+private[git4s] object Git4sRepository:
+
+  /** Access the default implementation directly from `Git4s[F].*` */
   def apply[F[_]: Async](using WorkingCtx, CmdRunner[F]): Git4sRepository[F] = new Git4sRepository[F]:
 
+    override lazy val log: Git4sLog[F]     = Git4sLog[F]
     override lazy val reset: Git4sReset[F] = Git4sReset[F]
     override lazy val tag: Git4sTag[F]     = Git4sTag[F]
 
@@ -268,28 +249,6 @@ object Git4sRepository:
           dontUseStdIgnoreRules -> "-x"
         )
         .run_
-
-    // log
-    override def log: Stream[F, GitCommitLog] =
-      GitCmd.log[F].stream
-
-    override def shortLog(
-      revisionRange: Option[(CommitTag, CommitTag)] = None,
-      email: Boolean                                = true,
-      sort: Boolean                                 = false,
-      excludeMerges: Boolean                        = false
-    ): Stream[F, GitCommitShortLog] =
-      GitCmd
-        .shortLog[F]
-        .addOptArgs(
-          revisionRange.map { case (from, to) => s"$from..$to" }
-        )
-        .addFlagArgs(
-          email         -> "--email",
-          sort          -> "--numbered",
-          excludeMerges -> "--no-merges"
-        )
-        .stream
 
     override def checkout(
       branchName: BranchName,

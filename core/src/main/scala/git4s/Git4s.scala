@@ -6,6 +6,7 @@ import fs2.io.file.Path
 import git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
 import git4s.data.GitVersion
 import git4s.log.CmdLogger
+import git4s.module.Git4sConfig
 
 /** Git4s is a pure functional wrapper around the git command line.
   *

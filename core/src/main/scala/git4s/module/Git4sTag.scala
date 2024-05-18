@@ -1,18 +1,24 @@
-package git4s
+package git4s.module
 
 import cats.effect.{Async, IO}
 import cats.syntax.all.*
 import git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
 import git4s.data.value.CommitTag
 
-trait Git4sTag[F[_]](using WorkingCtx):
+sealed trait Git4sTag[F[_]](using WorkingCtx):
   def list(pattern: Option[String] = None)(using CmdRunner[F]): fs2.Stream[F, CommitTag]
   def exists(tag: CommitTag)(using CmdRunner[F]): F[Boolean]
   def create(tag: CommitTag)(using CmdRunner[F]): F[Unit]
   def replace(tag: CommitTag)(using CmdRunner[F]): F[Unit]
   def delete(tag: CommitTag)(using CmdRunner[F]): F[Unit]
 
-object Git4sTag:
+private[git4s] object Git4sTag:
+
+  trait Module[F[_]]:
+    /** Return a Git4sTag type to perform tag operations */
+    def tag: Git4sTag[F]
+
+  /** Access from `Git4s[F].tag` */
   def apply[F[_]: Async](using WorkingCtx, CmdRunner[F]): Git4sTag[F] = new Git4sTag[F]:
 
     override def list(pattern: Option[String] = None)(using CmdRunner[F]): fs2.Stream[F, CommitTag] =
