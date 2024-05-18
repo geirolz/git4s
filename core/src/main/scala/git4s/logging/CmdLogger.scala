@@ -1,4 +1,4 @@
-package git4s.log
+package git4s.logging
 
 import cats.Applicative
 import cats.effect.kernel.{Async, Clock, Resource}
@@ -7,7 +7,7 @@ import cats.syntax.all.*
 import fs2.io.file.{Files, Flags, Path}
 import fs2.{Chunk, Stream}
 import git4s.cmd.{currentWorkingDir, WorkingCtx}
-import git4s.log.history.CmdHistoryLogger
+import git4s.logging.history.CmdHistoryLogger
 
 import java.time.LocalDateTime
 

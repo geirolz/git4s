@@ -1,4 +1,4 @@
-package git4s.log.history
+package git4s.logging.history
 
 import cats.effect.kernel.{Async, Ref}
 import cats.effect.std.Console
@@ -6,7 +6,7 @@ import cats.syntax.all.*
 import git4s.cmd.{currentWorkingDir, WorkingCtx}
 import fs2.Stream
 import git4s.cmd.{currentWorkingDir, WorkingCtx}
-import git4s.log.{CmdLogger, LogFilter, LogFormatter}
+import git4s.logging.{CmdLogger, LogFilter, LogFormatter}
 
 class CmdHistoryLogger[F[_]: Async](
   history: Ref[F, List[CmdHistoryLogger.Log]],

@@ -7,7 +7,7 @@ import fs2.io.file.Path
 import fs2.io.process.*
 import fs2.{text, Stream}
 import git4s.cmd.error.CmdFailure
-import git4s.log.CmdLogger
+import git4s.logging.CmdLogger
 
 trait CmdRunner[F[_]]:
   def stream[E, T](cmd: Cmd[F, E, T])(using WorkingCtx, CmdLogger[F]): Stream[F, T]

@@ -57,14 +57,16 @@ By default, the library uses the `Noop` logger which doesn't log anything since 
 for debugging purpose.
 
 Example:
+
 ```scala mdoc:reset
  import cats.effect.IO
- import git4s.Git4s
- import git4s.data.GitVersion
- import git4s.log.*
+import git4s.Git4s
+import git4s.data.GitVersion
+import git4s.logging.*
 
- given logger: CmdLogger[IO] = CmdLogger.console[IO](LogFilter.all)
- val result: IO[GitVersion] = Git4s[IO].version
+given logger: CmdLogger[IO]
+= CmdLogger.console[IO](LogFilter.all)
+val result: IO[GitVersion] = Git4s[IO].version
 ```
 
 ## Contributing

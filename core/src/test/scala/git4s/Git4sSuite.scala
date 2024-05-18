@@ -6,7 +6,7 @@ import git4s.testing.CmdRunnerStub.history
 import git4s.Git4s
 import git4s.cmd.CmdRunner
 import git4s.data.GitVersion
-import git4s.log.history.CmdHistoryLogger
+import git4s.logging.history.CmdHistoryLogger
 
 class Git4sSuite extends munit.CatsEffectSuite {
 

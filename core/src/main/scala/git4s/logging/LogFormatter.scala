@@ -1,4 +1,4 @@
-package git4s.log
+package git4s.logging
 
 import cats.effect.kernel.{Async, Concurrent}
 import cats.syntax.all.*

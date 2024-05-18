@@ -1,4 +1,4 @@
-package git4s.log
+package git4s.logging
 
 opaque type LogFilter = Int => Boolean
 object LogFilter:

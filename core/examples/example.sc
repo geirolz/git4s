@@ -1,9 +1,9 @@
-import cats.effect.{IO, Resource}
 import cats.effect.unsafe.implicits.global
+import cats.effect.{IO, Resource}
 import fs2.io.file.Path
-import git4s.{Git4s, Git4sReset}
-import git4s.log.*
+import git4s.Git4s
 import git4s.data.value.*
+import git4s.logging.*
 
 val path             = "/Users/davidgeirola/IdeaProjects/geirolz/cats-git"
 val git4s: Git4s[IO] = Git4s[IO].withWorkingDirectory(path)
@@ -55,6 +55,7 @@ given logger: CmdLogger[IO] = CmdLogger.console[IO](LogFilter.all)
 //git4s.log.compile.toList.unsafeRunSync()
 
 
+git4s.log().compile.toList.unsafeRunSync()
 
 //git4s.tag.list().compile.toList.unsafeRunSync()
-git4s.tag.exists(CommitTag("v0.0.2")).unsafeRunSync()
+//git4s.tag.exists(CommitTag("v0.0.2")).unsafeRunSync()

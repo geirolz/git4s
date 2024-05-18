@@ -1,12 +1,12 @@
-package git4s
+package git4s.module
 
 import cats.effect.kernel.Async
 import git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
 import git4s.data.GitResetMode
 import git4s.data.value.{Arg, CommitId}
-import git4s.log.CmdLogger
+import git4s.logging.CmdLogger
 
-trait Git4sReset[F[_]]:
+sealed trait Git4sReset[F[_]]:
 
   /** Reset the current HEAD to the specified state. */
   def apply()(using CmdLogger[F]): F[Unit]
@@ -27,7 +27,13 @@ trait Git4sReset[F[_]]:
     */
   def backToNCommit(mode: GitResetMode, n: Int)(using CmdLogger[F]): F[Unit]
 
-object Git4sReset:
+private[git4s] object Git4sReset:
+
+  trait Module[F[_]]:
+    /** Return a Git4sReset type to perform resets */
+    def reset: Git4sReset[F]
+
+  /** Access the default implementation directly from `Git4s[F].reset` */
   def apply[F[_]: Async](using WorkingCtx, CmdRunner[F]): Git4sReset[F] = new Git4sReset[F]:
 
     override def apply()(using CmdLogger[F]): F[Unit] =

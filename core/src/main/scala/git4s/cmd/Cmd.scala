@@ -8,7 +8,7 @@ import fs2.io.file.Path
 import git4s.cmd.error.CmdError
 import git4s.codec.CmdDecoder
 import git4s.data.value.{Arg, CmdArg}
-import git4s.log.CmdLogger
+import git4s.logging.CmdLogger
 
 private[git4s] final case class Cmd[F[_]: Async, E, T](
   decoder: CmdDecoder[F, T],

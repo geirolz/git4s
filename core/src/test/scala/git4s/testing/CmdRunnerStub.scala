@@ -4,7 +4,7 @@ import cats.effect.kernel.{Async, Resource}
 import cats.effect.std.Console
 import cats.syntax.all.*
 import git4s.cmd.{Cmd, CmdProcess, CmdRunner}
-import git4s.log.history.CmdHistoryLogger
+import git4s.logging.history.CmdHistoryLogger
 
 class CmdRunnerStub[F[_]: Async: Console]:
 
