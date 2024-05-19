@@ -1,5 +1,9 @@
 package git4s.data.value
 
+import cats.effect.kernel.Async
+import cats.syntax.all.*
+import git4s.codec.CmdDecoder
+
 opaque type CommitId = String
 object CommitId extends NewType[String, CommitId]
 
@@ -18,3 +22,8 @@ object CommitDate extends NewType[String, CommitDate]
 
 opaque type CommitMessage = String
 object CommitMessage extends NewType[String, CommitMessage]
+
+opaque type CommitTag = String
+object CommitTag extends NewType[String, CommitTag]:
+  given [F[_]: Async]: CmdDecoder[F, CommitTag] =
+    CmdDecoder.lines(_.filterNot(_.isBlank).map(t => CommitTag(t).asRight))

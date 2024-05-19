@@ -5,6 +5,7 @@ import cats.syntax.all.*
 import fs2.io.file.Path
 import git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
 import git4s.data.GitVersion
+import git4s.data.value.RepositoryRef
 import git4s.logging.CmdLogger
 import git4s.module.Git4sConfig
 
@@ -64,7 +65,7 @@ sealed trait Git4s[F[_]] extends GitInstaller[F], Git4sRepository[F]:
     *
     * [[https://git-scm.com/docs/git-clone]]
     */
-  def clone(repository: String, directory: Path)(using CmdLogger[F]): F[Unit]
+  def clone(repository: RepositoryRef, directory: Path)(using CmdLogger[F]): F[Unit]
 
   /** Get a type to access Git local config */
   def localConfig: Git4sConfig[F]
@@ -102,7 +103,7 @@ object Git4s:
       override def help(using CmdLogger[F]): F[String] =
         GitCmd.help.runGetLast.map(_.value)
 
-      override def clone(repository: String, destination: Path)(using CmdLogger[F]): F[Unit] =
+      override def clone(repository: RepositoryRef, destination: Path)(using CmdLogger[F]): F[Unit] =
         GitCmd.clone(repository, destination).runGetLast.void
 
       override def localConfig: Git4sConfig[F] =
