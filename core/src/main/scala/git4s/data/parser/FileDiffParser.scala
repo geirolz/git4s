@@ -48,17 +48,26 @@ private[git4s] object FileDiffParser:
             Pull.pure((CodeBlock.empty, fs2.Stream.empty))
         }
 
+      /*
+        diff --git a/baz.md b/baz.md
+        new file mode 100644
+        index 0000000..aa39060
+        --- /dev/null
+        +++ b/newfile.md
+        @@ -0,0 +1 @@
+        +newfile
+       * */
       // ------------------ NEW OR DELETED FILE ------------------
       def goNewOrDeletedFile(tpe: ChangeType)(
         stream: fs2.Stream[F, String]
-      ): Pull[F, Nothing, (NewFile | DeletedFile, fs2.Stream[F, String])] =
+      ): Pull[F, NewFile | DeletedFile, fs2.Stream[F, String]] =
 
         val isNewFile: Boolean = tpe == ChangeType.NewLines
         val f: (Path, CodeBlock) => NewFile | DeletedFile = tpe match
           case ChangeType.NewLines     => NewFile(_, _)
           case ChangeType.DeletedLines => DeletedFile(_, _)
 
-        stream.pull.unconsN(3).flatMap {
+        stream.drop(1).pull.unconsN(3).flatMap {
           case Some(chunk, rms2: fs2.Stream[F, String]) =>
             chunk.toList match {
               case s"$idA $_/$pathA" :: s"$idB $_/$pathB" :: s"@@ -$scol,$sline +$ecol,$eline @@" :: Nil =>
@@ -75,7 +84,7 @@ private[git4s] object FileDiffParser:
                       )
                     )
 
-                  Pull.pure((fileDiff, rms3))
+                  Pull.output1(fileDiff).as(rms3)
                 }
               case x =>
                 Pull.raiseError(MalformedDiff(x.mkString("\n")))
@@ -88,10 +97,10 @@ private[git4s] object FileDiffParser:
       def goMovedOrRenamedFile(
         from: String,
         stream: fs2.Stream[F, String]
-      ): Pull[F, Nothing, (RenamedFile, fs2.Stream[F, String])] =
+      ): Pull[F, RenamedFile, fs2.Stream[F, String]] =
         stream.pull.uncons1.flatMap {
           case Some((s"rename to $to", rms2)) =>
-            Pull.pure((RenamedFile(Path(from), Path(to)), rms2))
+            Pull.output1(RenamedFile(Path(from), Path(to))).as(rms2)
           case Some((x, _)) =>
             Pull.raiseError(MalformedDiff(x))
           case None =>
@@ -100,17 +109,15 @@ private[git4s] object FileDiffParser:
 
       def go(s: fs2.Stream[F, String]): Pull[F, FileDiff, Unit] =
         s.pull.uncons1.flatMap {
+
           case Some(s"new file mode $_", rms: fs2.Stream[F, String]) =>
-            goNewOrDeletedFile(ChangeType.NewLines)(rms.drop(1))
-              .flatMap { case (newFile, rms2) => Pull.output1(newFile) >> go(rms2) }
+            goNewOrDeletedFile(ChangeType.NewLines)(rms).flatMap(go(_))
 
           case Some(s"deleted file mode $_", rms: fs2.Stream[F, String]) =>
-            goNewOrDeletedFile(ChangeType.DeletedLines)(rms.drop(1))
-              .flatMap { case (newFile, rms2) => Pull.output1(newFile) >> go(rms2) }
+            goNewOrDeletedFile(ChangeType.DeletedLines)(rms).flatMap(go(_))
 
           case Some(s"rename from $from", rms: fs2.Stream[F, String]) =>
-            goMovedOrRenamedFile(from, rms)
-              .flatMap { case (renamedFile, rms2) => Pull.output1(renamedFile) >> go(rms2) }
+            goMovedOrRenamedFile(from, rms).flatMap(go(_))
 
 //          case Some(s"index $_", rms: fs2.Stream[F, String]) =>
 //            goNewOrDeletedFile(ChangeType.DeletedLine)(rms)

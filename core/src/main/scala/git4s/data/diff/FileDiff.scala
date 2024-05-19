@@ -42,9 +42,9 @@ object FileDiff extends FileDiffInstances:
       this.copy(changes = changes #:: this.changes)
 
   case class RenamedFile(
-    sourceFile: Path,
-    newFile: Path
-  ) extends FileDiff(Some(sourceFile), Some(newFile), LazyList.empty)
+    from: Path,
+    to: Path
+  ) extends FileDiff(Some(from), Some(to), LazyList.empty)
 
 sealed trait FileDiffInstances:
 

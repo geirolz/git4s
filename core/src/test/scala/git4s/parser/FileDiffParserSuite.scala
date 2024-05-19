@@ -1,158 +1,126 @@
 package git4s.parser
 
 import cats.effect.IO
-import git4s.data.diff.FileDiff
+import fs2.Chunk
+import fs2.io.file.Path
+import git4s.data.diff.{CodeBlock, FileDiff}
+import git4s.data.diff.FileDiff.NewFile
 import git4s.data.parser.FileDiffParser
 import git4s.testing.*
 
 class FileDiffParserSuite extends munit.CatsEffectSuite {
 
-  test("Parse diff with new files") {
-
-    val res: IO[List[FileDiff]] =
-      lines(
-        s"""
-           |$aDummyLine
-           |${newFile("Baz")}
-           |$aDummyLine
-           |${newFile("Bar")}
-           |$aDummyLine
-           |""".stripMargin
-      )
-        .through(FileDiffParser[IO].parse)
-        .compile
-        .toList
-
-    assertIO(
-      obtained = res.map(_.size),
-      returns  = 2
-    )
-  }
-
-  test("Parse diff with deleted files") {
-
-    val res: IO[List[FileDiff]] =
-      lines(
-        s"""
-          |$aDummyLine
-          |${deletedFile("Baz")}
-          |$aDummyLine
-          |${deletedFile("Bar")}
-          |$aDummyLine
-          |""".stripMargin
-      )
-        .through(FileDiffParser[IO].parse)
-        .compile
-        .toList
-
-    assertIO(
-      obtained = res.map(_.size),
-      returns  = 2
-    )
-  }
-
-  test("Parse diff with renamed files") {
-
-    val res: IO[List[FileDiff]] = lines(
-      s"""
-           |$aDummyLine
-           |${renamedFile("test/Foo.txt", "test/Bar.txt")}
-           |$aDummyLine
-           |${renamedFile("test/Bar.txt", "test/A/Baz.txt")}
-           |$aDummyLine
-           |""".stripMargin
-    )
+  private def parse(s: String): IO[List[FileDiff]] =
+    lines(s)
       .through(FileDiffParser[IO].parse)
       .compile
       .toList
 
+  test("New") {
     assertIO(
-      obtained = res.map(_.size),
-      returns  = 2
+      obtained = parse(
+        s"""diff --git a/baz.md b/baz.md
+           |new file mode 100644
+           |index 0000000..aa39060
+           |--- /dev/null
+           |+++ b/newfile.md
+           |@@ -0,0 +1,0 @@
+           |+newfile
+           |""".stripMargin
+      ),
+      returns = List(
+        NewFile(
+          Path("baz.md"),
+          CodeBlock(
+            startLine   = 0,
+            startColumn = 0,
+            endLine     = 0,
+            endColumn   = 0,
+            lines       = Chunk("newfile")
+          )
+        )
+      )
     )
   }
 
-//  test("Parse diff with changes files") {
-//
-//    val res: IO[List[FileDiff]] = lines(
-//      aDummyLine,
-//      aDummyLine,
-//      modifiedFile("test/Foo.txt"),
-//      aDummyLine,
-////      modifiedFile("test/Bar.txt"),
-////      aDummyLine,
-////      aDummyLine
-//    )
-//      .through(FileDiffParser[IO].parse)
-//      .compile
-//      .toList
-//
-//    assertIO(
-//      obtained = res,
-//      returns = List(
-//        FileDiff.ModifiedFile(
-//          Path("test/Foo.txt"),
-//          LazyList(
-//            CodeBlock.empty -> CodeBlock.empty
-//          )
-//        )
-//      )
-//    )
-//  }
+  test("Deleted") {
+    assertIO(
+      obtained = parse(
+        s"""diff --git a/deleted.md b/deleted.md
+           |deleted file mode 100644
+           |index aa39060..0000000
+           |--- a/deleted.md
+           |+++ /dev/null
+           |@@ -1 +0,0 @@
+           |-deletedFile
+           |""".stripMargin
+      ),
+      returns = List(
+        FileDiff.DeletedFile(
+          sourceFile = Path("deleted.md"),
+          content = CodeBlock(
+            startLine   = 1,
+            startColumn = 0,
+            endLine     = 1,
+            endColumn   = 0,
+            lines       = Chunk("deletedFile")
+          )
+        )
+      )
+    )
+  }
 
-  def newFile(name: String): String =
-    s"""
-      |diff --git a/$name.scala b/$name.scala
-      |new file mode 100644
-      |index 0000000..776d244
-      |--- /dev/null
-      |+++ b/$name.scala
-      |@@ -0,0 +1,5 @@
-      |+package git4s
-      |+
-      |+class $name {
-      |+
-      |+}
-      |""".stripMargin
+  test("Renamed") {
+    assertIO(
+      obtained = parse(
+        s"""diff --git a/old.md b/new.md
+         |similarity index 100%
+         |rename from old.md
+         |rename to new.md
+         |""".stripMargin.stripMargin
+      ),
+      returns = List(
+        FileDiff.RenamedFile(
+          from = Path("old.md"),
+          to   = Path("new.md")
+        )
+      )
+    )
+  }
 
-  def deletedFile(name: String): String =
-    s"""
-      |diff --git a/$name.scala b/$name.scala
-      |deleted file mode 100644
-      |index 776d244..0000000
-      |--- a/$name.scala
-      |+++ /dev/null
-      |@@ -1,5 +0,0 @@
-      |-package git4s
-      |-
-      |-class Bar {
-      |-
-      |-}
-      |""".stripMargin
-
-  def renamedFile(from: String, to: String): String =
-    s"""diff --git a/$from b/$to
-      |similarity index 100%
-      |rename from $from
-      |rename to $to
-      |""".stripMargin
-
-  def modifiedFile(name: String): String =
-    s"""
-       |diff --git a/$name.scala b/$name.scala
-       |index 776d244..0000000
-       |--- a/$name.scala
-       |+++ b/$name.scala
-       |@@ -31,7 +31,7 @@ libraryDependencies += "com.github.geirolz" %% "git4s" % "<version>"
-       | - [x] git config [local | global]
+  def conflictFile(name: String = "README.md"): String =
+    s"""diff --cc $name
+       |index 2445f65,f4b8569..0000000
+       |--- a/$name
+       |+++ b/$name
+       |@@@ -8,7 -8,7 +8,11 @@@
+       |  npm install parse-git-diff
        |
-       | **tag**
-       |-- [ ] git tag
-       |+- [x] git tag [list | create | delete | replace]
        |
-       | **repository**
-       | - [x] git status
+       |++<<<<<<< HEAD
+       | +## a
+       |++=======
+       |+ ## b
+       |++>>>>>>> branch-b
        |
+       |  - [demo](https://yeonjuan.github.io/parse-git-diff/)
        |""".stripMargin
 
+  def newLineFile(name: String = "README.md"): String =
+    s"""diff --git a/$name b/$name
+       |index aa39060..0e05564 100644
+       |--- a/rename.md
+       |+++ b/rename.md
+       |@@ -1 +1,2 @@
+       | newfile
+       |+newline""".stripMargin
+
+  def deletedLineFile(name: String = "README.md"): String =
+    s"""diff --git a/$name b/$name
+       |index 0e05564..aa39060 100644
+       |--- a/rename.md
+       |+++ b/rename.md
+       |@@ -1,2 +1 @@
+       | newfile
+       |-newline""".stripMargin
 }
