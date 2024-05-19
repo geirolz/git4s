@@ -1,10 +1,11 @@
 package git4s.data.parser
 
 import cats.effect.kernel.Async
-import git4s.data.diff.FileDiff.*
 import fs2.io.file.Path
-import fs2.{Pipe, Pull}
+import fs2.{Chunk, Pipe, Pull}
+import git4s.data.diff.FileDiff.*
 import git4s.data.diff.{CodeBlock, FileDiff}
+import git4s.utils.*
 
 import scala.util.control.NoStackTrace
 
@@ -23,75 +24,64 @@ private[git4s] object FileDiffParser:
   case object PrematureEOS extends ParsingDiffFailure
   case class MalformedDiff(actual: String) extends ParsingDiffFailure
 
-  // changes types
-  private sealed trait ChangeType(val symbol: String)
-  private object ChangeType:
-    case object NewLines extends ChangeType("+")
-    case object DeletedLines extends ChangeType("-")
-
   def apply[F[_]](using p: FileDiffParser[F]): FileDiffParser[F] = p
 
   given [F[_]](using F: Async[F]): FileDiffParser[F] with
-    def parse: Pipe[F, String, FileDiff] = (s: fs2.Stream[F, String]) =>
+    def parse: Pipe[F, String, FileDiff] = (originalStream: fs2.Stream[F, String]) =>
 
       // ------------------ EDITED FILE ------------------
-      def goChangeBlock(
-        tpe: ChangeType,
-        source: fs2.Stream[F, String]
-      ): Pull[F, Nothing, (CodeBlock, fs2.Stream[F, String])] =
-        source.groupAdjacentBy(_.startsWith(tpe.symbol)).pull.uncons1.flatMap {
-          case Some(((_, lines), rms)) =>
-            val codeBlock = CodeBlock.withoutInfo(lines.map(_.drop(1)))
-            Pull.pure((codeBlock, source.drop(lines.size)))
-          case None =>
-            // empty file - stream ended
-            Pull.pure((CodeBlock.empty, fs2.Stream.empty))
-        }
+      def goChangedFile[D <: FileDiff](stream: fs2.Stream[F, String])(
+        f: ((Path, Path), (CodeBlock, CodeBlock)) => D
+      ): Pull[F, D, fs2.Stream[F, String]] = {
 
-      /*
-        diff --git a/baz.md b/baz.md
-        new file mode 100644
-        index 0000000..aa39060
-        --- /dev/null
-        +++ b/newfile.md
-        @@ -0,0 +1 @@
-        +newfile
-       * */
-      // ------------------ NEW OR DELETED FILE ------------------
-      def goNewOrDeletedFile(tpe: ChangeType)(
-        stream: fs2.Stream[F, String]
-      ): Pull[F, NewFile | DeletedFile, fs2.Stream[F, String]] =
+        def goSingleCodeBlock(
+          s: fs2.Stream[F, String]
+        )(symbol: Char, linesInfoStr: String): Pull[F, Nothing, (CodeBlock, fs2.Stream[F, String])] =
+          s.pull
+            .unconsUntil(_.startsWith(symbol.toString))
+            .flatMap { case (lines, rms) =>
+              val linesInfo = linesInfoStr match
+                case s"$s,$n" => (s.toIntOption, n.toIntOption)
+                case s"$s"    => (None, s.toIntOption)
 
-        val isNewFile: Boolean = tpe == ChangeType.NewLines
-        val f: (Path, CodeBlock) => NewFile | DeletedFile = tpe match
-          case ChangeType.NewLines     => NewFile(_, _)
-          case ChangeType.DeletedLines => DeletedFile(_, _)
+              Pull.pure(
+                CodeBlock(
+                  startLine  = linesInfo._1.getOrElse(0),
+                  linesCount = linesInfo._2.getOrElse(0),
+                  lines      = lines.map(_.drop(1)) // remove the symbol
+                ) -> rms
+              )
+            }
 
-        stream.drop(1).pull.unconsN(3).flatMap {
+        def goChangeBlock(s: fs2.Stream[F, String]): Pull[F, Nothing, ((CodeBlock, CodeBlock), fs2.Stream[F, String])] =
+          s.pull.uncons1.flatMap {
+            case Some((s"@@ -$beforeLinesStr +$afterLinesStr @@", rms1)) =>
+              goSingleCodeBlock(rms1)('-', beforeLinesStr).flatMap { case (beforeCodeblock, rms2) =>
+                goSingleCodeBlock(rms2)('+', afterLinesStr).map { case (afterCodeblock, rms3) =>
+                  ((beforeCodeblock, afterCodeblock), rms3)
+                }
+              }
+            case Some((x, _)) =>
+              Pull.raiseError(MalformedDiff(x))
+            case None =>
+              Pull.raiseError(PrematureEOS)
+          }
+
+        stream.drop(1).pull.unconsN(2).flatMap {
           case Some(chunk, rms2: fs2.Stream[F, String]) =>
-            chunk.toList match {
-              case s"$idA $_/$pathA" :: s"$idB $_/$pathB" :: s"@@ -$scol,$sline +$ecol,$eline @@" :: Nil =>
-                val path = if (isNewFile) pathA else pathB
-                goChangeBlock(tpe, rms2).flatMap { case (changes, rms3) =>
-                  val fileDiff: NewFile | DeletedFile =
-                    f(
-                      Path(path),
-                      changes.copy(
-                        startLine   = sline.toInt,
-                        startColumn = scol.toInt,
-                        endLine     = eline.toInt,
-                        endColumn   = ecol.toInt
-                      )
-                    )
-
-                  Pull.output1(fileDiff).as(rms3)
+            chunk.toList match
+              case s"$idA $_/$pathA" :: s"$idB $_/$pathB" :: Nil =>
+                goChangeBlock(rms2).flatMap { case (changes, rms3) =>
+                  Pull
+                    .output1(f((Path(pathA), Path(pathB)), changes))
+                    .as(rms3)
                 }
               case x =>
                 Pull.raiseError(MalformedDiff(x.mkString("\n")))
-            }
           case _ =>
             Pull.raiseError(PrematureEOS)
         }
+      }
 
       // ------------------ MOVED OR RENAMED FILE ------------------
       def goMovedOrRenamedFile(
@@ -111,16 +101,16 @@ private[git4s] object FileDiffParser:
         s.pull.uncons1.flatMap {
 
           case Some(s"new file mode $_", rms: fs2.Stream[F, String]) =>
-            goNewOrDeletedFile(ChangeType.NewLines)(rms).flatMap(go(_))
+            goChangedFile(rms)((p, b) => NewFile(p._2, b._2)).flatMap(go(_))
 
           case Some(s"deleted file mode $_", rms: fs2.Stream[F, String]) =>
-            goNewOrDeletedFile(ChangeType.DeletedLines)(rms).flatMap(go(_))
+            goChangedFile(rms)((p, b) => DeletedFile(p._1, b._1)).flatMap(go(_))
 
           case Some(s"rename from $from", rms: fs2.Stream[F, String]) =>
             goMovedOrRenamedFile(from, rms).flatMap(go(_))
 
 //          case Some(s"index $_", rms: fs2.Stream[F, String]) =>
-//            goNewOrDeletedFile(ChangeType.DeletedLine)(rms)
+//            goChangedFile(ChangeType.DeletedLine)(rms)
 //              .flatMap { case (newFile, rms2) => Pull.output1(newFile) >> go(rms2) }
 
           // skip line
@@ -131,4 +121,4 @@ private[git4s] object FileDiffParser:
             Pull.done
         }
 
-      go(s).stream
+      go(originalStream).stream

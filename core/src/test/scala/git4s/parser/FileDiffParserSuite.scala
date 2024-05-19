@@ -19,24 +19,22 @@ class FileDiffParserSuite extends munit.CatsEffectSuite {
   test("New") {
     assertIO(
       obtained = parse(
-        s"""diff --git a/baz.md b/baz.md
+        s"""diff --git a/newfile.md b/newfile.md
            |new file mode 100644
            |index 0000000..aa39060
            |--- /dev/null
            |+++ b/newfile.md
-           |@@ -0,0 +1,0 @@
+           |@@ -0,0 +1 @@
            |+newfile
            |""".stripMargin
       ),
       returns = List(
         NewFile(
-          Path("baz.md"),
+          Path("newfile.md"),
           CodeBlock(
-            startLine   = 0,
-            startColumn = 0,
-            endLine     = 0,
-            endColumn   = 0,
-            lines       = Chunk("newfile")
+            startLine  = 0,
+            linesCount = 1,
+            lines      = Chunk("newfile")
           )
         )
       )
@@ -59,11 +57,9 @@ class FileDiffParserSuite extends munit.CatsEffectSuite {
         FileDiff.DeletedFile(
           sourceFile = Path("deleted.md"),
           content = CodeBlock(
-            startLine   = 1,
-            startColumn = 0,
-            endLine     = 1,
-            endColumn   = 0,
-            lines       = Chunk("deletedFile")
+            startLine  = 0,
+            linesCount = 1,
+            lines      = Chunk("deletedFile")
           )
         )
       )
@@ -77,7 +73,7 @@ class FileDiffParserSuite extends munit.CatsEffectSuite {
          |similarity index 100%
          |rename from old.md
          |rename to new.md
-         |""".stripMargin.stripMargin
+         |""".stripMargin
       ),
       returns = List(
         FileDiff.RenamedFile(
@@ -87,6 +83,39 @@ class FileDiffParserSuite extends munit.CatsEffectSuite {
       )
     )
   }
+
+//  test("New Line") {
+//    assertIO(
+//      obtained = parse(
+//        s"""diff --git a/README.md b/README.md
+//           |index aa39060..0e05564 100644
+//           |--- a/README.md
+//           |+++ b/README.md
+//           |@@ -1 +1,2 @@
+//           | newfile
+//           |+newline""".stripMargin
+//      ),
+//      returns = List(
+//        FileDiff.ModifiedFile(
+//          file = Path("README.md"),
+//          changes = LazyList(
+//            (
+//              CodeBlock(
+//                startLine  = 1,
+//                linesCount = 1,
+//                lines      = Chunk("newfile")
+//              ),
+//              CodeBlock(
+//                startLine  = 1,
+//                linesCount = 2,
+//                lines      = Chunk("newfile", "newline")
+//              )
+//            )
+//          )
+//        )
+//      )
+//    )
+//  }
 
   def conflictFile(name: String = "README.md"): String =
     s"""diff --cc $name

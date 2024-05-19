@@ -5,9 +5,7 @@ import fs2.Chunk
 
 case class CodeBlock(
   startLine: Int,
-  startColumn: Int,
-  endLine: Int,
-  endColumn: Int,
+  linesCount: Int,
   lines: Chunk[String] = Chunk.empty
 ):
 
@@ -17,14 +15,10 @@ case class CodeBlock(
   def addLines(lines: Chunk[String]): CodeBlock =
     copy(lines = this.lines ++ lines)
 
-  override def toString: String =
-    s"""|-$startColumn:$startLine +$endColumn:$endLine,
-       |${lines.toList.mkString("\n")}""".stripMargin
-
 object CodeBlock:
 
   def withoutInfo(lines: Chunk[String]): CodeBlock =
-    CodeBlock(0, 0, 0, 0, lines)
+    CodeBlock(0, 0, lines)
 
   val empty: CodeBlock = CodeBlock.withoutInfo(Chunk.empty)
 
