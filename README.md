@@ -11,7 +11,7 @@
 Functional and typesafe library to use git commands in Scala, based on cats, cats-effect and fs2.
 
 ```sbt
-libraryDependencies += "com.github.geirolz" %% "git4s" % "<version>"
+libraryDependencies += "com.github.geirolz" %% "git4s" % "0.0.2"
 ```
 
 ## Features
@@ -31,7 +31,7 @@ libraryDependencies += "com.github.geirolz" %% "git4s" % "<version>"
 - [x] git config [local | global]
 
 **tag**
-- [ ] git tag
+- [x] git tag
 
 **repository**
 - [x] git status
@@ -45,7 +45,7 @@ libraryDependencies += "com.github.geirolz" %% "git4s" % "<version>"
 - [x] git branch [create]
 - [x] git reset [to commit | to HEAD~n]
 - [x] git clean 
-- [ ] git diff 
+- [ ] git diff [WIP]
 
 ## Usage
 
@@ -57,20 +57,22 @@ By default, the library uses the `Noop` logger which doesn't log anything since 
 for debugging purpose.
 
 Example:
+
 ```scala
 import cats.effect.IO
- import git4s.Git4s
- import git4s.data.GitVersion
- import git4s.log.*
+import git4s.Git4s
+import git4s.data.GitVersion
+import git4s.logging.*
 
- given logger: CmdLogger[IO] = CmdLogger.console[IO](LogFilter.all)
- val result: IO[GitVersion] = Git4s[IO].version
+given logger: CmdLogger[IO]
+= CmdLogger.console[IO](LogFilter.all)
+val result: IO[GitVersion] = Git4s[IO].version
 // result: IO[GitVersion] = FlatMap(
 //   ioe = Uncancelable(
-//     body = cats.effect.IO$$$Lambda/0x000000700352d088@4df981e1,
+//     body = cats.effect.IO$$$Lambda/0x0000000303605958@b5734aa,
 //     event = cats.effect.tracing.TracingEvent$StackTrace
 //   ),
-//   f = fs2.Stream$CompileOps$$Lambda/0x0000007003544a78@56e4502c,
+//   f = fs2.Stream$CompileOps$$Lambda/0x0000000303605d20@2d0e0e97,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 ```
