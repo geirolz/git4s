@@ -133,7 +133,7 @@ private[git4s] object Git4sRepository:
   /** Access the default implementation directly from `Git4s[F].*` */
   def apply[F[_]: Async](using WorkingCtx, CmdRunner[F]): Git4sRepository[F] = new Git4sRepository[F]:
 
-    // modules
+    // mo
     override lazy val log: Git4sLog[F]     = Git4sLog[F]
     override lazy val reset: Git4sReset[F] = Git4sReset[F]
     override lazy val tag: Git4sTag[F]     = Git4sTag[F]

@@ -5,6 +5,7 @@ import fs2.Stream
 import git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
 import git4s.data.{GitCommitLog, GitCommitShortLog}
 import git4s.data.value.CommitTag
+import git4s.logging.CmdLogger
 
 sealed trait Git4sLog[F[_]]:
 
@@ -12,7 +13,7 @@ sealed trait Git4sLog[F[_]]:
     *
     * [[https://git-scm.com/docs/git-log]]
     */
-  def apply(revisionRange: Option[(CommitTag, CommitTag)] = None): fs2.Stream[F, GitCommitLog]
+  def apply(revisionRange: Option[(CommitTag, CommitTag)] = None)(using CmdLogger[F]): fs2.Stream[F, GitCommitLog]
 
   /** Summarize git log output
     *
@@ -23,7 +24,7 @@ sealed trait Git4sLog[F[_]]:
     email: Boolean                                = true,
     sort: Boolean                                 = false,
     excludeMerges: Boolean                        = false
-  ): fs2.Stream[F, GitCommitShortLog]
+  )(using CmdLogger[F]): fs2.Stream[F, GitCommitShortLog]
 
 private[git4s] object Git4sLog:
 
@@ -33,7 +34,9 @@ private[git4s] object Git4sLog:
   /** Access the default implementation directly from `Git4s[F].log` */
   def apply[F[_]: Async](using WorkingCtx, CmdRunner[F]): Git4sLog[F] = new Git4sLog[F]:
 
-    override def apply(revisionRange: Option[(CommitTag, CommitTag)] = None): Stream[F, GitCommitLog] =
+    override def apply(
+      revisionRange: Option[(CommitTag, CommitTag)] = None
+    )(using CmdLogger[F]): Stream[F, GitCommitLog] =
       GitCmd
         .log[F]
         .addOptArgs(
@@ -46,7 +49,7 @@ private[git4s] object Git4sLog:
       email: Boolean                                = true,
       sort: Boolean                                 = false,
       excludeMerges: Boolean                        = false
-    ): Stream[F, GitCommitShortLog] =
+    )(using CmdLogger[F]): Stream[F, GitCommitShortLog] =
       GitCmd
         .shortLog[F]
         .addOptArgs(

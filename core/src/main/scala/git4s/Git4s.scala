@@ -1,6 +1,6 @@
 package git4s
 
-import cats.effect.Async
+import cats.effect.{Async, IO}
 import cats.syntax.all.*
 import fs2.io.file.Path
 import git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
@@ -75,13 +75,14 @@ sealed trait Git4s[F[_]] extends GitInstaller[F], Git4sRepository[F]:
 
 object Git4s:
 
-  def apply[F[_]: Async: CmdRunner]: Git4s[F] =
-    Git4s[F](
-      workingDir = None,
-      installer  = GitInstaller.default[F]
-    )
+  inline def apply[F[_]: Git4s]: Git4s[F] = summon[Git4s[F]]
 
-  private def apply[F[_]: Async: CmdRunner](
+  given Git4s[IO] = Git4s.of[IO](
+    workingDir = None,
+    installer  = GitInstaller.default[IO]
+  )
+
+  private def of[F[_]: Async: CmdRunner](
     workingDir: Option[Path] = None,
     installer: GitInstaller[F]
   ): Git4s[F] =
@@ -95,10 +96,10 @@ object Git4s:
       export repository.*
 
       override def withWorkingDirectory(dir: Path): Git4s[F] =
-        Git4s(workingDir = Some(dir), installer)
+        Git4s.of(workingDir = Some(dir), installer)
 
       override def withCurrentWorkingDirectory: Git4s[F] =
-        Git4s(workingDir = None, installer)
+        Git4s.of(workingDir = None, installer)
 
       override def help(using CmdLogger[F]): F[String] =
         GitCmd.help.runGetLast.map(_.value)
