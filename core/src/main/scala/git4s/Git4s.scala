@@ -76,13 +76,15 @@ sealed trait Git4s[F[_]] extends GitInstaller[F], Git4sRepository[F]:
 object Git4s:
 
   inline def apply[F[_]: Git4s]: Git4s[F] = summon[Git4s[F]]
+  given Git4s[IO]                         = Git4s.default[IO]
 
-  given Git4s[IO] = Git4s.of[IO](
-    workingDir = None,
-    installer  = GitInstaller.default[IO]
-  )
+  def default[F[_]: Async: CmdRunner]: Git4s[F] =
+    Git4s.of[F](
+      workingDir = None,
+      installer  = GitInstaller.default[F]
+    )
 
-  private def of[F[_]: Async: CmdRunner](
+  def of[F[_]: Async: CmdRunner](
     workingDir: Option[Path] = None,
     installer: GitInstaller[F]
   ): Git4s[F] =

@@ -8,6 +8,7 @@ import fs2.io.process.*
 import fs2.{text, Stream}
 import git4s.cmd.error.CmdFailure
 import git4s.logging.CmdLogger
+import compiletime.asMatchable
 
 trait CmdRunner[F[_]]:
   def stream[E, T](cmd: Cmd[F, E, T])(using WorkingCtx, CmdLogger[F]): Stream[F, T]
@@ -44,9 +45,11 @@ private[git4s] object CmdRunner:
               .evalTap(e => errTopic.offer(Some(e)))
               .through(cmd.errorDecoder.decode)
               .flatMap {
-                case Left(e)             => Stream.raiseError(e)
-                case Right(e: Throwable) => Stream.raiseError(e)
-                case Right(e: E)         => Stream.raiseError(CmdFailure(e.toString))
+                case Left(e) => Stream.raiseError(e)
+                case Right(e: E) =>
+                  e.asMatchable match
+                    case e: Throwable => Stream.raiseError(e)
+                    case e: E         => Stream.raiseError(CmdFailure(e.toString))
               }
               .onFinalize(errTopic.offer(None))
 

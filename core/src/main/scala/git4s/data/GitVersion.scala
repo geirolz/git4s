@@ -13,7 +13,7 @@ object GitVersion:
   given [F[_]: Async]: CmdDecoder[F, GitVersion] =
     CmdDecoder.text[F].emap {
       case s"git version $major.$minor.$patch" =>
-        Right(GitVersion(major.toInt, minor.toInt, patch.toInt))
+        Right(GitVersion(major.trim.toInt, minor.trim.toInt, patch.trim.toInt))
       case result =>
         Left(
           GenericDecodingFailure(

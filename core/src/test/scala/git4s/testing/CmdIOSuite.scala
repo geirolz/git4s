@@ -25,7 +25,7 @@ trait CmdIOSuite extends munit.CatsEffectSuite:
     CmdRunnerStub[IO].stdout(fs2.Stream.emits(stubbedStdout)) {
       for {
         _ <- assertIO(
-          obtained = run(Git4s[IO]),
+          obtained = run(Git4s.default[IO]),
           returns  = expected
         )
         _ <- assertIO(

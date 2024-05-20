@@ -58,10 +58,10 @@ private[git4s] final case class Cmd[F[_]: Async, E, T](
 private[git4s] object Cmd:
 
   def simple_[F[_]: Async](cmdArg: CmdArg, args: Arg*): Cmd[F, CmdError, Unit] =
-    apply[F, CmdError, Unit](cmdArg, args: _*)
+    apply[F, CmdError, Unit](cmdArg, args*)
 
   def simple[F[_]: Async](cmdArg: CmdArg, args: Arg*): Cmd[F, CmdError, String] =
-    apply[F, CmdError, String](cmdArg, args: _*)
+    apply[F, CmdError, String](cmdArg, args*)
 
   def apply[F[_]: Async, E: CmdDecoder[F, *], T: CmdDecoder[F, *]](
     cmdArg: CmdArg,

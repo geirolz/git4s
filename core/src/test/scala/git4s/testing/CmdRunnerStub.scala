@@ -7,7 +7,7 @@ import git4s.cmd.{Cmd, CmdProcess, CmdRunner}
 import git4s.logging.history.CmdHistoryLogger
 
 class CmdRunnerStub[F[_]: Async: Console]:
-  
+
   def stdout[T](s1: String, sN: String*)(f: (CmdRunner[F], CmdHistoryLogger[F]) ?=> F[T]): F[T] =
     stdout(fs2.Stream.emits(s1 +: sN))(f)
 
@@ -23,7 +23,7 @@ class CmdRunnerStub[F[_]: Async: Console]:
     )(f)
 
   def stderr[T](s1: String, sN: String*)(f: (CmdRunner[F], CmdHistoryLogger[F]) ?=> F[T]): F[T] =
-    stderr(-1, s1, sN: _*)(f)
+    stderr(-1, s1, sN*)(f)
 
   def stderr[T](exitCode: Int, s1: String, sN: String*)(f: (CmdRunner[F], CmdHistoryLogger[F]) ?=> F[T]): F[T] =
     stderr(exitCode, fs2.Stream.emits(s1 +: sN))(f)
