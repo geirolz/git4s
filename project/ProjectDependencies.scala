@@ -9,7 +9,7 @@ object ProjectDependencies {
   private val fs2Version        = "3.10.2"
   // test
   private val munitVersion       = "0.7.29"
-  private val munitEffectVersion = "1.0.7"
+  private val munitEffectVersion = "2.0.0"
   private val scalacheck         = "1.18.0"
 
   lazy val common: Seq[ModuleID] = Seq(
@@ -20,10 +20,10 @@ object ProjectDependencies {
     "co.fs2"        %% "fs2-io"      % fs2Version,
 
     // test
-    "org.scalameta"  %% "munit"               % munitVersion       % Test,
-    "org.typelevel"  %% "munit-cats-effect-3" % munitEffectVersion % Test,
-    "org.scalameta"  %% "munit-scalacheck"    % munitVersion       % Test,
-    "org.scalacheck" %% "scalacheck"          % scalacheck         % Test
+    "org.scalameta"  %% "munit"             % munitVersion       % Test,
+    "org.typelevel"  %% "munit-cats-effect" % munitEffectVersion % Test,
+    "org.scalameta"  %% "munit-scalacheck"  % munitVersion       % Test,
+    "org.scalacheck" %% "scalacheck"        % scalacheck         % Test
   )
 
   object Core {
