@@ -2,7 +2,7 @@ pull_request_rules:
   - name: automatic merge for master when CI passes and 1 reviews and not WIP
     conditions:
       - "#approved-reviews-by>=1"
-      - check-success=build (Scala3_3)
+      - check-success=build (Scala3_4)
       - base=main
       - label!=work-in-progress
     actions:
@@ -11,7 +11,7 @@ pull_request_rules:
   - name: automatic merge for master when CI passes and author is steward
     conditions:
       - author=scala-steward-geirolz[bot]
-      - check-success=build (Scala3_3)
+      - check-success=build (Scala3_4)
       - base=main
     actions:
       merge:
@@ -19,7 +19,7 @@ pull_request_rules:
   - name: automatic merge for master when CI passes and author is dependabot
     conditions:
       - author=dependabot[bot]
-      - check-success=build (Scala3_3)
+      - check-success=build (Scala3_4)
       - base=main
     actions:
       merge:
