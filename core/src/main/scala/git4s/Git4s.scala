@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import fs2.io.file.Path
 import git4s.cmd.{CmdRunner, GitCmd, WorkingCtx}
 import git4s.data.GitVersion
-import git4s.data.RepositoryURL
+import git4s.data.GitRepositoryURL
 import git4s.logging.CmdLogger
 import git4s.module.Git4sConfig
 
@@ -65,7 +65,7 @@ sealed trait Git4s[F[_]] extends GitInstaller[F], Git4sRepository[F]:
     *
     * [[https://git-scm.com/docs/git-clone]]
     */
-  def clone(repository: RepositoryURL, directory: Path)(using CmdLogger[F]): F[Unit]
+  def clone(repository: GitRepositoryURL, directory: Path)(using CmdLogger[F]): F[Unit]
 
   /** Same as `clone(RepositoryURL, Path)` but with a string URL */
   def clone(repository: String, directory: Path)(using CmdLogger[F], DummyImplicit): F[Unit]
@@ -109,7 +109,7 @@ object Git4s:
       override def help(using CmdLogger[F]): F[String] =
         GitCmd.help.runGetLast.map(_.value)
 
-      override def clone(repositoryURL: RepositoryURL, destination: Path)(using CmdLogger[F]): F[Unit] =
+      override def clone(repositoryURL: GitRepositoryURL, destination: Path)(using CmdLogger[F]): F[Unit] =
         GitCmd.clone(repositoryURL, destination).runGetLast.void
 
       override def clone(repositoryURL: String, destination: Path)(using CmdLogger[F], DummyImplicit): F[Unit] =

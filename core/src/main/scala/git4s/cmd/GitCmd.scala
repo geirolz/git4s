@@ -29,7 +29,7 @@ private[git4s] object GitCmd:
     git("help")
 
   /** [[https://git-scm.com/docs/git-clone]] */
-  def clone[F[_]: Async](repositoryURL: RepositoryURL, destination: Path): GitCmd[F, GitFailure, GitCloneResult] =
+  def clone[F[_]: Async](repositoryURL: GitRepositoryURL, destination: Path): GitCmd[F, GitFailure, GitCloneResult] =
     git("clone", repositoryURL.value, destination.toString)
 
   /** [[https://git-scm.com/docs/git-version]] */
