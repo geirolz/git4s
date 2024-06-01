@@ -8,7 +8,7 @@ import git4s.data.diff.FileDiff
 import git4s.data.failure.{GitCheckoutFailure, GitConfigFailure, GitFailure}
 import git4s.data.request.GitConfigTarget
 import git4s.data.value.CmdArg.cmd
-import git4s.data.value.{Arg, BranchName, CommitTag, Remote, RepositoryRef}
+import git4s.data.value.{Arg, BranchName, CommitTag, Remote}
 
 /** Git commands collection. This object contains all the git commands available in a minimal shape. Each command is
   * represented by a method that returns a [[Cmd]] instance.
@@ -29,8 +29,8 @@ private[git4s] object GitCmd:
     git("help")
 
   /** [[https://git-scm.com/docs/git-clone]] */
-  def clone[F[_]: Async](repository: RepositoryRef, destination: Path): GitCmd[F, GitFailure, GitCloneResult] =
-    git("clone", repository.value, destination.toString)
+  def clone[F[_]: Async](repositoryURL: RepositoryURL, destination: Path): GitCmd[F, GitFailure, GitCloneResult] =
+    git("clone", repositoryURL.value, destination.toString)
 
   /** [[https://git-scm.com/docs/git-version]] */
   def version[F[_]: Async]: GitCmd[F, GitFailure, GitVersion] =
