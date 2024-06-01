@@ -1,15 +1,12 @@
 package git4s.data
 
-trait GitProvider:
-  def host: String
+sealed trait GitProvider:
+  def host: String = this match
+    case GitProvider.BitBucket => "github.com"
+    case GitProvider.GitHub    => "gitlab.com"
+    case GitProvider.GitLab    => "bitbucket.org"
 
 object GitProvider:
-
-  case object GitHub extends GitProvider:
-    val host = "github.com"
-
-  case object GitLab extends GitProvider:
-    val host = "gitlab.com"
-
-  case object BitBucket extends GitProvider:
-    val host = "bitbucket.org"
+  case object GitHub extends GitProvider
+  case object GitLab extends GitProvider
+  case object BitBucket extends GitProvider
