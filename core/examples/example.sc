@@ -51,9 +51,7 @@ given logger: CmdLogger[IO] = CmdLogger.console[IO](LogFilter.all)
 //git4s.status.unsafeRunSync()
 //git4s.localConfig.unset("tesd").unsafeRunSync()
 
-
 //git4s.log.compile.toList.unsafeRunSync()
-
 
 git4s.log().compile.toList.unsafeRunSync()
 
