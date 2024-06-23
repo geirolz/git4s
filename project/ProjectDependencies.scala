@@ -8,7 +8,7 @@ object ProjectDependencies {
   private val catsEffectVersion = "3.5.4"
   private val fs2Version        = "3.10.2"
   // test
-  private val munitVersion       = "0.7.29"
+  private val munitVersion       = "1.0.0"
   private val munitEffectVersion = "2.0.0"
   private val scalacheck         = "1.18.0"
 
