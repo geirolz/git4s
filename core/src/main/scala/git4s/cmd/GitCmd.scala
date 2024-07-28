@@ -45,7 +45,7 @@ private[git4s] object GitCmd:
     remote: Remote             = Remote.origin,
     branch: Option[BranchName] = None
   ): Cmd[F, GitFailure, Unit] =
-  git("pull", remote).addOptArgs(branch)
+    git("pull", remote).addOptArgs(branch)
 
   /** [[https://git-scm.com/docs/git-push]] */
   def push[F[_]: Async](remote: Remote = Remote.origin): Cmd[F, GitFailure, Unit] =
