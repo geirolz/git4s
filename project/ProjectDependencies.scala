@@ -5,7 +5,7 @@ object ProjectDependencies {
 
   // base
   private val catsVersion       = "2.12.0"
-  private val catsEffectVersion = "3.5.4"
+  private val catsEffectVersion = "3.5.6"
   private val fs2Version        = "3.10.2"
   // test
   private val munitVersion       = "1.0.0"
